@@ -1,3 +1,5 @@
+// Opdateret miljøvariabler
+
 const KV_KEY = 'lan-planner-data';
 const DEFAULT_DATA = JSON.stringify({ people: [], dates: [], agreedDateId: null });
 
