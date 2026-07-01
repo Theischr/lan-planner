@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LAN_PLANNER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="gate" class="gate hidden">
+    <div class="gate-box">
+      <div class="brand-row"><span class="led led-cyan"></span><span class="brand">LAN_PLANNER</span></div>
+      <p class="muted">Indtast adgangskoden I er blevet enige om.</p>
+      <div class="inline-form">
+        <input id="gate-input" class="input" type="password" placeholder="Adgangskode" />
+        <button id="gate-submit" class="primary-btn">Åbn</button>
+      </div>
+      <p id="gate-error" class="error-text hidden">Forkert kode, prøv igen.</p>
+    </div>
+  </div>
+
+  <div id="app" class="page hidden">
+    <div class="wrap">
+      <header class="header">
+        <div class="brand-row">
+          <span class="led led-cyan"></span>
+          <span class="brand">LAN_PLANNER</span>
+        </div>
+        <div class="status-row">
+          <span id="status-led" class="led led-green"></span>
+          <span id="status-text" class="status-text">tilsluttet</span>
+          <button id="refresh-btn" class="icon-btn" title="Genindlæs">&#x21bb;</button>
+        </div>
+      </header>
+
+      <div id="error-box" class="error-box hidden"></div>
+
+      <div id="countdown-banner" class="countdown-banner hidden">
+        <div class="countdown-label">NÆSTE LAN</div>
+        <div id="countdown-date" class="countdown-date"></div>
+        <div id="countdown-timer" class="countdown-timer"></div>
+        <div id="countdown-location" class="countdown-location"></div>
+        <button id="unagree-btn" class="link-btn">fortryd aftalt dato</button>
+      </div>
+
+      <section id="name-section" class="card hidden">
+        <h2 class="h2">Hvem er du?</h2>
+        <p class="muted">Vælg dit navn, eller tilføj dig selv første gang.</p>
+        <div id="name-chips" class="chip-row"></div>
+        <div class="inline-form">
+          <input id="name-input" class="input" placeholder="Dit navn" />
+          <button id="name-submit" class="primary-btn">Fortsæt</button>
+        </div>
+      </section>
+
+      <div id="main-section" class="hidden">
+        <section class="top-row">
+          <div class="who-am-i">
+            <span>Du er <strong id="who-am-i-name"></strong></span>
+            <button id="switch-name-btn" class="link-btn">skift</button>
+          </div>
+          <div class="add-person-form">
+            <input id="new-person-input" class="input-small" placeholder="Tilføj deltager" />
+            <button id="add-person-btn" class="icon-btn">+</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="h2">Foreslå en dato</h2>
+          <div class="inline-form">
+            <input id="new-date-input" class="input" type="date" />
+            <button id="add-date-btn" class="primary-btn">+ Tilføj</button>
+          </div>
+        </section>
+
+        <section id="dates-list" class="list"></section>
+      </div>
+
+      <footer class="footer">Data deles mellem alle der har adgangskoden.</footer>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
