@@ -2,8 +2,18 @@ name = "lan-planner"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "."
 
-# Efter du har kørt `wrangler kv namespace create lan-planner-kv`,
-# indsæt det udskrevne id herunder og fjern kommentaren.
-# [[kv_namespaces]]
-# binding = "DATA_KV"
-# id = "SÆT_DIT_NAMESPACE_ID_HER"
+[[kv_namespaces]]
+binding = "DATA_KV"
+id = "c3700f7d096a4b3782f2132b1392579b"
+
+[vars]
+ACCESS_CODE = "Fadøl"
+
+[env.preview]
+
+[[env.preview.kv_namespaces]]
+binding = "DATA_KV"
+id = "c3700f7d096a4b3782f2132b1392579b"
+
+[env.preview.vars]
+ACCESS_CODE = "Fadøl"
