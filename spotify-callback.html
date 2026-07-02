@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spotify login…</title>
+<style>
+  body {
+    background: #0B0F14;
+    color: #E6EDF3;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    text-align: center;
+    padding: 16px;
+  }
+  #msg { font-size: 14px; color: #7C8A9A; max-width: 320px; }
+</style>
+</head>
+<body>
+<p id="msg">Logger ind med Spotify…</p>
+<script>
+  const SPOTIFY_CLIENT_ID = '5bc849ae64ac41888fb0bda78ab96887';
+  const SPOTIFY_REDIRECT_URI = 'https://lan-plan.pages.dev/spotify-callback';
+  const SPOTIFY_TOKEN_KEY = 'lan-planner-spotify-tokens';
+  const SPOTIFY_VERIFIER_KEY = 'lan-planner-spotify-verifier';
+
+  (async () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    const msg = document.getElementById('msg');
+
+    if (error) {
+      msg.textContent = 'Spotify login blev afbrudt eller fejlede (' + error + '). Gå tilbage og prøv igen.';
+      return;
+    }
+
+    const verifier = localStorage.getItem(SPOTIFY_VERIFIER_KEY);
+    if (!code || !verifier) {
+      msg.textContent = 'Mangler login-data. Gå tilbage til appen og prøv "Forbind til Spotify" igen.';
+      return;
+    }
+
+    try {
+      const body = new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+        code_verifier: verifier,
+      });
+      const res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      const tokenData = await res.json();
+      if (!res.ok) throw new Error(tokenData.error_description || 'Kunne ikke hente adgangstoken');
+
+      const tokens = {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_at: Date.now() + tokenData.expires_in * 1000,
+      };
+      localStorage.setItem(SPOTIFY_TOKEN_KEY, JSON.stringify(tokens));
+      localStorage.removeItem(SPOTIFY_VERIFIER_KEY);
+      msg.textContent = 'Logget ind! Sender dig tilbage til LAN_PLANNER…';
+      window.location.href = '/';
+    } catch (e) {
+      msg.textContent = 'Noget gik galt: ' + e.message;
+    }
+  })();
+</script>
+</body>
+</html>

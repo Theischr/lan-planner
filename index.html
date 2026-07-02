@@ -75,6 +75,10 @@
           <button class="tab-btn" data-tab="food">Mad</button>
           <button class="tab-btn" data-tab="points">Point</button>
           <button class="tab-btn" data-tab="checklist">Tjekliste</button>
+          <button class="tab-btn" data-tab="spotify">Musik</button>
+          <button class="tab-btn" data-tab="sounds">Lyde</button>
+          <button class="tab-btn" data-tab="timer">Timer</button>
+          <button class="tab-btn" data-tab="speedtest">Speedtest</button>
         </nav>
 
         <div id="tab-calendar" class="tab-panel">
@@ -100,7 +104,82 @@
               Tips: <button id="enable-notif-btn" class="link-btn">slå notifikationer til</button> for at få besked om nye bestillinger.
             </div>
           </section>
+
+          <section class="card">
+            <h2 class="h2">Tilføj til drinkmenuen</h2>
+            <div class="inline-form">
+              <input id="menu-drink-name" class="input" placeholder="Navn på drinken" />
+            </div>
+            <div class="inline-form" style="margin-top:8px;">
+              <input id="menu-drink-desc" class="input" placeholder="Beskrivelse (valgfri)" />
+            </div>
+            <div class="inline-form" style="margin-top:8px;">
+              <input id="menu-drink-image" class="input" placeholder="Billede-link (valgfrit)" />
+              <button id="menu-drink-add-btn" class="primary-btn">+ Tilføj</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
+              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
+            </div>
+            <div id="wheel-result" class="wheel-result hidden"></div>
+            <div id="drink-menu-list" class="game-grid"></div>
+          </section>
+
           <section id="drinks-list" class="list"></section>
+        </div>
+
+        <div id="tab-sounds" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Tilføj en lyd</h2>
+            <p class="muted">Indsæt et link til en lydfil, eller upload en kort fil selv (helst under ~300 KB — I skal selv levere lydene).</p>
+            <div class="inline-form">
+              <input id="sound-label-input" class="input-small" placeholder="Navn (fx 'Sejrslyd')" />
+              <input id="sound-url-input" class="input" placeholder="Link til lydfil (valgfrit hvis du uploader)" />
+            </div>
+            <div class="inline-form" style="margin-top:8px;">
+              <input id="sound-file-input" type="file" accept="audio/*" class="input" />
+              <button id="sound-add-btn" class="primary-btn">+ Tilføj</button>
+            </div>
+          </section>
+          <section id="sound-grid" class="sound-grid"></section>
+        </div>
+
+        <div id="tab-timer" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Stopur</h2>
+            <div id="stopwatch-display" class="timer-display">00:00.0</div>
+            <div class="timer-buttons">
+              <button id="stopwatch-startpause" class="primary-btn">Start</button>
+              <button id="stopwatch-lap" class="icon-btn">Lap</button>
+              <button id="stopwatch-reset" class="icon-btn">Nulstil</button>
+            </div>
+            <div id="stopwatch-laps" class="stopwatch-laps"></div>
+          </section>
+          <section class="card">
+            <h2 class="h2">Nedtælling / alarm</h2>
+            <div class="inline-form">
+              <input id="countdown-minutes-input" type="number" min="0" step="1" class="input-small" placeholder="Minutter" value="5" />
+              <button id="countdown-start-btn" class="primary-btn">Start</button>
+              <button id="countdown-stop-btn" class="icon-btn hidden">Stop</button>
+            </div>
+            <div id="countdown-display" class="timer-display"></div>
+          </section>
+        </div>
+
+        <div id="tab-speedtest" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">LAN-net speedtest 🚀</h2>
+            <p class="muted">Gimmick-test af download-hastighed og ping mod serveren — se hvem der har det bedste net.</p>
+            <button id="speedtest-run-btn" class="primary-btn">Kør test</button>
+            <div id="speedtest-status" class="muted small" style="margin-top:8px;"></div>
+          </section>
+          <section class="card">
+            <h2 class="h2">Resultater</h2>
+            <div id="speedtest-leaderboard" class="leaderboard"></div>
+          </section>
         </div>
 
         <div id="tab-games" class="tab-panel hidden">
@@ -174,6 +253,37 @@
             </div>
           </section>
         </div>
+
+        <div id="tab-spotify" class="tab-panel hidden">
+          <div id="spotify-login" class="card hidden">
+            <h2 class="h2">Forbind til Spotify</h2>
+            <p class="muted">Log ind med den Spotify-konto der styrer musikken på jeres højtaler. Kræver Spotify Premium for at kunne styre afspilning eksternt.</p>
+            <button id="spotify-login-btn" class="primary-btn">Forbind til Spotify</button>
+          </div>
+
+          <div id="spotify-connected" class="hidden">
+            <section class="card">
+              <div id="spotify-now-playing"></div>
+              <div id="spotify-controls" class="spotify-controls hidden">
+                <div class="spotify-transport">
+                  <button id="spotify-previous" class="icon-btn spotify-transport-btn">⏮</button>
+                  <button id="spotify-playpause" class="primary-btn spotify-transport-btn">▶</button>
+                  <button id="spotify-next" class="icon-btn spotify-transport-btn">⏭</button>
+                </div>
+                <div class="spotify-volume-row">
+                  <span class="muted small">🔉</span>
+                  <input id="spotify-volume" type="range" min="0" max="100" value="50" />
+                  <span class="muted small">🔊</span>
+                </div>
+              </div>
+            </section>
+            <section class="card">
+              <h2 class="h2">Enheder</h2>
+              <div id="spotify-devices" class="spotify-devices"></div>
+            </section>
+            <button id="spotify-logout-btn" class="link-btn">Log ud af Spotify</button>
+          </div>
+        </div>
       </div>
 
       <footer class="footer">Data deles mellem alle der har adgangskoden.</footer>
@@ -181,5 +291,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="spotify.js"></script>
+  <script src="timer.js"></script>
 </body>
 </html>

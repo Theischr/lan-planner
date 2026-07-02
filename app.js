@@ -24,11 +24,14 @@ function emptyData() {
     dates: [],
     agreedDateId: null,
     drinks: [],
+    drinkMenu: [],
     games: [],
     meals: { snacks: [], lunch: [], dinner: [] },
     points: [],
     checklistItems: DEFAULT_CHECKLIST.slice(),
     checklistChecked: {},
+    sounds: [],
+    speedResults: [],
   };
 }
 
@@ -70,8 +73,11 @@ function normalizeData(raw) {
   if (!next.checklistItems || next.checklistItems.length === 0) next.checklistItems = base.checklistItems;
   if (!next.checklistChecked) next.checklistChecked = {};
   if (!next.drinks) next.drinks = [];
+  if (!next.drinkMenu) next.drinkMenu = [];
   if (!next.games) next.games = [];
   if (!next.points) next.points = [];
+  if (!next.sounds) next.sounds = [];
+  if (!next.speedResults) next.speedResults = [];
   return next;
 }
 
@@ -174,10 +180,13 @@ function render() {
   renderCountdown();
   renderDates();
   renderDrinks();
+  renderDrinkMenu();
   renderGames();
   renderMeals();
   renderPoints();
   renderChecklist();
+  renderSounds();
+  renderSpeedResults();
   checkNewDrinks();
 }
 
@@ -476,6 +485,140 @@ function requestNotificationPermission() {
   Notification.requestPermission().then(() => renderDrinks());
 }
 
+/* ---------- Drink menu + wheel ---------- */
+
+function renderDrinkMenu() {
+  const grid = $('drink-menu-list');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (data.drinkMenu.length === 0) {
+    grid.innerHTML = '<div class="empty">Ingen drinks på menuen endnu. Tilføj den første ovenfor.</div>';
+    return;
+  }
+
+  data.drinkMenu.forEach((d) => {
+    const card = document.createElement('div');
+    card.className = 'game-card drink-menu-card';
+    card.dataset.drinkId = d.id;
+
+    const remove = document.createElement('button');
+    remove.className = 'game-remove';
+    remove.textContent = '✕';
+    remove.onclick = () => removeDrinkMenuItem(d.id);
+    card.appendChild(remove);
+
+    if (d.imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'game-icon';
+      img.src = d.imageUrl;
+      img.alt = d.name;
+      img.onerror = () => { img.replaceWith(fallbackDrinkIcon()); };
+      card.appendChild(img);
+    } else {
+      card.appendChild(fallbackDrinkIcon());
+    }
+
+    const name = document.createElement('div');
+    name.className = 'game-name';
+    name.textContent = d.name;
+    card.appendChild(name);
+
+    if (d.description) {
+      const desc = document.createElement('div');
+      desc.className = 'game-meta';
+      desc.textContent = d.description;
+      card.appendChild(desc);
+    }
+
+    const orderBtn = document.createElement('button');
+    orderBtn.className = 'done-btn';
+    orderBtn.style.marginTop = '8px';
+    orderBtn.style.width = '100%';
+    orderBtn.textContent = 'Bestil';
+    orderBtn.onclick = () => orderDrinkFromMenu(d);
+    card.appendChild(orderBtn);
+
+    grid.appendChild(card);
+  });
+}
+
+function fallbackDrinkIcon() {
+  const div = document.createElement('div');
+  div.className = 'game-icon-fallback';
+  div.textContent = '🍹';
+  return div;
+}
+
+async function addDrinkMenuItem() {
+  const nameInput = $('menu-drink-name');
+  const descInput = $('menu-drink-desc');
+  const imageInput = $('menu-drink-image');
+  const name = nameInput.value.trim();
+  if (!name || !myName) return;
+  const entry = {
+    id: uid(),
+    name,
+    description: descInput.value.trim(),
+    imageUrl: imageInput.value.trim(),
+    addedBy: myName,
+  };
+  await saveData({ ...data, drinkMenu: [...data.drinkMenu, entry] });
+  nameInput.value = '';
+  descInput.value = '';
+  imageInput.value = '';
+}
+
+async function removeDrinkMenuItem(id) {
+  await saveData({ ...data, drinkMenu: data.drinkMenu.filter((d) => d.id !== id) });
+}
+
+async function orderDrinkFromMenu(menuItem) {
+  if (!myName) return;
+  const entry = { id: uid(), item: menuItem.name, person: myName, timestamp: Date.now(), done: false };
+  markDrinkSeen(entry.id);
+  await saveData({ ...data, drinks: [...data.drinks, entry] });
+}
+
+let wheelSpinning = false;
+
+function spinWheel() {
+  if (wheelSpinning) return;
+  const cards = Array.from(document.querySelectorAll('#drink-menu-list .drink-menu-card'));
+  if (cards.length === 0) {
+    showError('Tilføj mindst én drink til menuen før I snurrer hjulet.');
+    return;
+  }
+  wheelSpinning = true;
+  const winnerIndex = Math.floor(Math.random() * cards.length);
+  const resultBox = $('wheel-result');
+  resultBox.classList.add('hidden');
+
+  let step = 0;
+  const totalSteps = 18 + winnerIndex; // ensures it lands on winnerIndex after full loops
+  let delay = 80;
+
+  function tick() {
+    cards.forEach((c) => c.classList.remove('wheel-highlight'));
+    const idx = step % cards.length;
+    cards[idx].classList.add('wheel-highlight');
+    step++;
+    delay += 12; // decelerate
+
+    if (step < totalSteps) {
+      setTimeout(tick, delay);
+    } else {
+      const winner = data.drinkMenu[winnerIndex];
+      wheelSpinning = false;
+      resultBox.textContent = `🎉 Hjulet valgte: ${winner.name}!`;
+      resultBox.classList.remove('hidden');
+      orderDrinkFromMenu(winner);
+      setTimeout(() => cards.forEach((c) => c.classList.remove('wheel-highlight')), 1500);
+    }
+  }
+  tick();
+}
+
 /* ---------- Games ---------- */
 
 function renderGames() {
@@ -739,6 +882,193 @@ async function removeChecklistItem(itemId) {
   });
 }
 
+/* ---------- Soundboard ---------- */
+
+const MAX_SOUND_BYTES = 350 * 1024; // ~350KB, keeps the shared blob manageable
+
+function renderSounds() {
+  const grid = $('sound-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (data.sounds.length === 0) {
+    grid.innerHTML = '<div class="empty">Ingen lyde endnu. Tilføj jeres egne ovenfor (link eller kort upload).</div>';
+    return;
+  }
+
+  data.sounds.forEach((s) => {
+    const card = document.createElement('div');
+    card.className = 'sound-card';
+
+    const remove = document.createElement('button');
+    remove.className = 'game-remove';
+    remove.textContent = '✕';
+    remove.onclick = (e) => {
+      e.stopPropagation();
+      removeSound(s.id);
+    };
+    card.appendChild(remove);
+
+    const playBtn = document.createElement('button');
+    playBtn.className = 'sound-play-btn';
+    playBtn.innerHTML = `<span class="sound-icon">🔊</span><span class="sound-label">${escapeHtml(s.label)}</span>`;
+    playBtn.onclick = () => playSound(s.url);
+    card.appendChild(playBtn);
+
+    grid.appendChild(card);
+  });
+}
+
+function playSound(url) {
+  try {
+    const audio = new Audio(url);
+    audio.play().catch((e) => showError('Kunne ikke afspille lyden: ' + e.message));
+  } catch (e) {
+    showError('Kunne ikke afspille lyden.');
+  }
+}
+
+async function addSound() {
+  const labelInput = $('sound-label-input');
+  const urlInput = $('sound-url-input');
+  const fileInput = $('sound-file-input');
+  const label = labelInput.value.trim();
+  if (!label || !myName) return;
+
+  const file = fileInput.files && fileInput.files[0];
+  let url = urlInput.value.trim();
+
+  if (file) {
+    if (file.size > MAX_SOUND_BYTES) {
+      showError(`Filen er for stor (${Math.round(file.size / 1024)} KB). Hold jer under ${Math.round(MAX_SOUND_BYTES / 1024)} KB.`);
+      return;
+    }
+    try {
+      url = await fileToDataUrl(file);
+    } catch (e) {
+      showError('Kunne ikke læse filen.');
+      return;
+    }
+  }
+
+  if (!url) {
+    showError('Indsæt enten et link eller upload en fil.');
+    return;
+  }
+
+  const entry = { id: uid(), label, url, addedBy: myName };
+  await saveData({ ...data, sounds: [...data.sounds, entry] });
+  labelInput.value = '';
+  urlInput.value = '';
+  fileInput.value = '';
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function removeSound(id) {
+  await saveData({ ...data, sounds: data.sounds.filter((s) => s.id !== id) });
+}
+
+/* ---------- Speed test ---------- */
+
+async function pingOnce() {
+  const start = performance.now();
+  const res = await fetch('/api/ping', { headers: { 'X-Access-Code': accessCode() }, cache: 'no-store' });
+  if (!res.ok) throw new Error('ping failed');
+  await res.text();
+  return performance.now() - start;
+}
+
+async function downloadTestOnce(sizeBytes) {
+  const start = performance.now();
+  const res = await fetch(`/api/speedtest?size=${sizeBytes}`, {
+    headers: { 'X-Access-Code': accessCode() },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('speedtest failed');
+  const buf = await res.arrayBuffer();
+  const seconds = (performance.now() - start) / 1000;
+  const mbps = (buf.byteLength * 8) / seconds / 1e6;
+  return mbps;
+}
+
+async function runSpeedTest() {
+  const statusEl = $('speedtest-status');
+  const btn = $('speedtest-run-btn');
+  if (!myName) return;
+  btn.disabled = true;
+
+  try {
+    statusEl.textContent = 'Måler ping…';
+    const pings = [];
+    for (let i = 0; i < 4; i++) {
+      pings.push(await pingOnce());
+    }
+    const pingMs = Math.min(...pings);
+
+    statusEl.textContent = 'Måler downloadhastighed…';
+    const mbps1 = await downloadTestOnce(4000000);
+    const mbps2 = await downloadTestOnce(8000000);
+    const downloadMbps = Math.max(mbps1, mbps2);
+
+    const entry = {
+      id: uid(),
+      person: myName,
+      downloadMbps: Math.round(downloadMbps * 10) / 10,
+      pingMs: Math.round(pingMs),
+      timestamp: Date.now(),
+    };
+    await saveData({ ...data, speedResults: [...data.speedResults, entry] });
+    statusEl.textContent = `Færdig: ${entry.downloadMbps} Mbps, ${entry.pingMs} ms ping.`;
+  } catch (e) {
+    statusEl.textContent = 'Testen fejlede: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSpeedResults() {
+  const box = $('speedtest-leaderboard');
+  if (!box) return;
+  box.innerHTML = '';
+
+  const bestByPerson = {};
+  data.speedResults.forEach((r) => {
+    if (!bestByPerson[r.person] || r.downloadMbps > bestByPerson[r.person].downloadMbps) {
+      bestByPerson[r.person] = r;
+    }
+  });
+
+  const ranked = Object.values(bestByPerson).sort((a, b) => b.downloadMbps - a.downloadMbps);
+  if (ranked.length === 0) {
+    box.innerHTML = '<div class="empty">Ingen tests kørt endnu.</div>';
+    return;
+  }
+  const maxMbps = Math.max(1, ...ranked.map((r) => r.downloadMbps));
+
+  ranked.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'leaderboard-row';
+    row.innerHTML = `
+      <span class="leaderboard-rank">#${i + 1}</span>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between;">
+          <span class="leaderboard-name">${escapeHtml(r.person)}</span>
+          <span class="leaderboard-score">${r.downloadMbps} Mbps · ${r.pingMs} ms</span>
+        </div>
+        <div class="leaderboard-bar-track"><div class="leaderboard-bar-fill" style="width:${(r.downloadMbps / maxMbps) * 100}%"></div></div>
+      </div>`;
+    box.appendChild(row);
+  });
+}
+
 /* ---------- Utils ---------- */
 
 function escapeHtml(str) {
@@ -816,6 +1146,13 @@ async function init() {
   $('checklist-new-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addChecklistItem();
   });
+
+  $('menu-drink-add-btn').onclick = addDrinkMenuItem;
+  $('spin-wheel-btn').onclick = spinWheel;
+
+  $('sound-add-btn').onclick = addSound;
+
+  $('speedtest-run-btn').onclick = runSpeedTest;
 
   if (savedCode) {
     try {

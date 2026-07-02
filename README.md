@@ -79,7 +79,32 @@ Appen har nu faner: **Kalender, Drinks, Spil, Mad, Point, Tjekliste**. Alt samme
 
 Efter du har pushet disse filer til dit GitHub-repo (bare erstat `index.html`, `style.css`, `app.js` — `functions/api/data.js` og `wrangler.toml` er uændrede), skal Cloudflare automatisk redeploye.
 
+## Spotify-styring
+
+Ny fane **Musik** lader jer styre afspilning via Spotify Connect (play/pause/skift nummer/lydstyrke + vælg hvilken enhed, fx jeres Google-højtaler, der spiller).
+
+**Sådan virker det:**
+- Bruger PKCE-login direkte fra browseren — intet Client Secret involveret, kun det offentlige Client ID.
+- `spotify-callback.html` skal ligge i repo-roden ved siden af `index.html` — det er filen der matcher jeres registrerede redirect-URI `https://lan-plan.pages.dev/spotify-callback` (Cloudflare Pages matcher automatisk extensionless URL'er til den tilsvarende `.html`-fil).
+- Login/tokens gemmes kun lokalt i hver persons egen browser (ikke i den delte KV) — hver af jer logger ind med sin egen Spotify-konto.
+- Kræver Spotify Premium på den konto der skal styre afspilningen, og at Spotify-appen er åben/cast'et til jeres Google-højtaler mindst én gang, så den dukker op i enhedslisten.
+
+**Vigtigt ved deploy:** sørg for at `spotify-callback.html` også bliver pushet til GitHub-repoet sammen med de andre filer, og at `spotify.js` er inkluderet — ellers virker Musik-fanen ikke.
+
 ## Kommer senere
 
-- **Galleri/meme-slideshow**: kræver en beslutning om billedopbevaring (base64 i jeres eksisterende KV vs. en ny R2-bucket).
-- **Spotify-styring**: kræver at du opretter en Spotify Developer-app på developer.spotify.com og giver et Client ID.
+- **Galleri/meme-slideshow**: droppet for nu, kan tages op igen senere.
+
+## Endnu flere faner (v3)
+
+- **Drinkmenu + hjul**: Under Drinks kan I nu bygge en menu med navn, beskrivelse og billede pr. drink. "🎡 Snurr hjulet" vælger tilfældigt en drink fra menuen og bestiller den automatisk.
+- **Lyde**: Nyt soundboard. Tilføj jeres egne klip via link eller en kort upload (under ~350 KB, gemmes direkte i jeres delte data). **Vigtigt:** vi leverer ikke selv nogen lyde her — de skal komme fra jer, da spil-/meme-lyde typisk er ophavsretligt beskyttede.
+- **Timer**: Stopur med lap-funktion, og en nedtælling/alarm med et indbygget bip (ingen lydfil nødvendig). Rent lokal i browseren, deles ikke mellem jer.
+- **Speedtest**: Gimmick-måling af downloadhastighed og ping mod jeres egen Cloudflare-deployment. Bruger to nye Functions: `functions/api/speedtest.js` (leverer en tilfældig byte-payload) og `functions/api/ping.js` (måler round-trip). Begge er beskyttet af samme `ACCESS_CODE` som resten af appen — ingen ny opsætning nødvendig ud over at pushe filerne.
+
+**Husk ved deploy:** disse to nye filer skal også med til GitHub:
+```
+functions/api/speedtest.js
+functions/api/ping.js
+```
+Sammen med de opdaterede `index.html`, `style.css`, `app.js`, `timer.js`. Tjek som altid under Functions-fanen efter deploy at `/api/speedtest` og `/api/ping` dukker op som routes.

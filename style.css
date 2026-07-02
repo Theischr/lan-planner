@@ -396,13 +396,15 @@ body {
 
 /* Meals */
 .meal-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
 }
 .meal-column {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px;
-  margin: 20px;
 }
 .h3 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--cyan); font-family: var(--mono); }
 .meal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
@@ -493,6 +495,117 @@ body {
 .checklist-label.checked-text { text-decoration: line-through; color: var(--muted); }
 .checklist-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
 
+/* Spotify */
+.spotify-track { display: flex; align-items: center; gap: 14px; }
+.spotify-art { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.spotify-art-fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border: 1px solid var(--border); font-size: 22px;
+}
+.spotify-track-info { min-width: 0; }
+.spotify-track-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spotify-track-artist { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spotify-track-device { font-size: 10.5px; color: var(--cyan); margin-top: 3px; font-family: var(--mono); }
+
+.spotify-controls { margin-top: 16px; }
+.spotify-transport { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+.spotify-transport-btn { font-size: 16px; padding: 10px 18px; }
+.spotify-volume-row { display: flex; align-items: center; gap: 10px; }
+.spotify-volume-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--cyan);
+}
+
+.spotify-devices { display: flex; flex-direction: column; gap: 8px; }
+.spotify-device-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.spotify-device-row.active { border-color: var(--cyan); color: var(--cyan); }
+
+/* Drink menu + wheel */
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.wheel-result {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--cyan);
+  padding: 10px;
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.drink-menu-card.wheel-highlight {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(76,201,240,0.5);
+}
+
+/* Soundboard */
+.sound-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.sound-card {
+  position: relative;
+}
+.sound-play-btn {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.sound-play-btn:active { border-color: var(--cyan); }
+.sound-icon { font-size: 20px; }
+.sound-label { text-align: center; word-break: break-word; }
+
+/* Timer */
+.timer-display {
+  font-family: var(--mono);
+  font-size: 40px;
+  font-weight: 700;
+  text-align: center;
+  padding: 16px 0;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+.timer-buttons { display: flex; gap: 8px; justify-content: center; }
+.stopwatch-laps { margin-top: 12px; max-height: 160px; overflow-y: auto; }
+.lap-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
 @media (max-width: 420px) {
   .countdown-timer { font-size: 22px; }
+  .timer-display { font-size: 30px; }
 }
