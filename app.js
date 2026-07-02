@@ -570,13 +570,22 @@ function renderMeals() {
 }
 
 async function addMealItem(meal) {
-  const input = document.querySelector(`.meal-input[data-meal="${meal}"]`);
-  const name = input.value.trim();
-  if (!name || !myName) return;
-  const entry = { id: uid(), name, addedBy: myName };
-  const nextMeals = { ...data.meals, [meal]: [...(data.meals[meal] || []), entry] };
-  await saveData({ ...data, meals: nextMeals });
-  input.value = '';
+  try {
+    const input = document.querySelector(`.meal-input[data-meal="${meal}"]`);
+    if (!input) {
+      showError(`Kunne ikke finde inputfeltet for ${meal}. Prøv at genindlæse siden.`);
+      return;
+    }
+    const name = input.value.trim();
+    if (!name || !myName) return;
+    const entry = { id: uid(), name, addedBy: myName };
+    const nextMeals = { ...data.meals, [meal]: [...(data.meals[meal] || []), entry] };
+    await saveData({ ...data, meals: nextMeals });
+    input.value = '';
+  } catch (err) {
+    console.error('addMealItem failed', err);
+    showError('Der gik noget galt da du tilføjede punktet. Prøv igen.');
+  }
 }
 
 async function removeMealItem(meal, id) {
@@ -623,9 +632,31 @@ function renderPoints() {
   sortedLog.forEach((entry) => {
     const row = document.createElement('div');
     row.className = 'point-log-row';
-    row.innerHTML = `<span>${escapeHtml(entry.winner)} vandt <strong style="color:var(--text)">${escapeHtml(entry.game)}</strong> (+${entry.points})</span><span>${formatTime(entry.timestamp)}</span>`;
+    const info = document.createElement('span');
+    info.innerHTML = `${escapeHtml(entry.winner)} vandt <strong style="color:var(--text)">${escapeHtml(entry.game)}</strong> (+${entry.points})`;
+    row.appendChild(info);
+
+    const right = document.createElement('span');
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '8px';
+    const time = document.createElement('span');
+    time.textContent = formatTime(entry.timestamp);
+    right.appendChild(time);
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'point-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Fjern denne registrering';
+    removeBtn.onclick = () => removePointEntry(entry.id);
+    right.appendChild(removeBtn);
+    row.appendChild(right);
+
     log.appendChild(row);
   });
+}
+
+async function removePointEntry(id) {
+  await saveData({ ...data, points: data.points.filter((p) => p.id !== id) });
 }
 
 async function addPointEntry() {
@@ -768,13 +799,15 @@ async function init() {
     if (e.key === 'Enter') addGame();
   });
 
-  document.querySelectorAll('.meal-add-btn').forEach((btn) => {
-    btn.onclick = () => addMealItem(btn.dataset.meal);
+  const foodTab = $('tab-food');
+  foodTab.addEventListener('click', (e) => {
+    const btn = e.target.closest('.meal-add-btn');
+    if (btn) addMealItem(btn.dataset.meal);
   });
-  document.querySelectorAll('.meal-input').forEach((input) => {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') addMealItem(input.dataset.meal);
-    });
+  foodTab.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('meal-input')) {
+      addMealItem(e.target.dataset.meal);
+    }
   });
 
   $('point-add-btn').onclick = addPointEntry;
