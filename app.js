@@ -1,6 +1,7 @@
 const API_URL = '/api/data';
 const NAME_KEY = 'lan-planner-my-name';
 const CODE_KEY = 'lan-planner-access-code';
+const SEEN_DRINKS_KEY = 'lan-planner-seen-drinks';
 
 const VOTE_TYPES = {
   ja: { label: 'Ja', color: 'var(--green)', activeClass: 'active-ja' },
@@ -8,14 +9,42 @@ const VOTE_TYPES = {
   nej: { label: 'Nej', color: 'var(--red)', activeClass: 'active-nej' },
 };
 
-let data = { people: [], dates: [], agreedDateId: null };
+const DEFAULT_CHECKLIST = [
+  { id: 'pc', label: 'PC' },
+  { id: 'skaerm', label: 'Skærm' },
+  { id: 'mus', label: 'Mus' },
+  { id: 'tastatur', label: 'Tastatur' },
+  { id: 'musemaatte', label: 'Musemåtte' },
+  { id: 'kabler', label: 'Kabler (strøm + skærm)' },
+];
+
+function emptyData() {
+  return {
+    people: [],
+    dates: [],
+    agreedDateId: null,
+    drinks: [],
+    games: [],
+    meals: { snacks: [], lunch: [], dinner: [] },
+    points: [],
+    checklistItems: DEFAULT_CHECKLIST.slice(),
+    checklistChecked: {},
+  };
+}
+
+let data = emptyData();
 let myName = localStorage.getItem(NAME_KEY) || null;
 let countdownInterval = null;
+let activeTab = 'calendar';
 
 const $ = (id) => document.getElementById(id);
 
 function accessCode() {
   return localStorage.getItem(CODE_KEY) || '';
+}
+
+function uid() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 async function apiFetch(options = {}) {
@@ -34,14 +63,24 @@ async function apiFetch(options = {}) {
   return res;
 }
 
+function normalizeData(raw) {
+  const base = emptyData();
+  const next = { ...base, ...raw };
+  next.meals = { ...base.meals, ...(raw.meals || {}) };
+  if (!next.checklistItems || next.checklistItems.length === 0) next.checklistItems = base.checklistItems;
+  if (!next.checklistChecked) next.checklistChecked = {};
+  if (!next.drinks) next.drinks = [];
+  if (!next.games) next.games = [];
+  if (!next.points) next.points = [];
+  return next;
+}
+
 async function loadData() {
   try {
     const res = await apiFetch();
     if (!res.ok) throw new Error('load failed');
-    data = await res.json();
-    if (!data.people) data.people = [];
-    if (!data.dates) data.dates = [];
-    if (data.agreedDateId === undefined) data.agreedDateId = null;
+    const raw = await res.json();
+    data = normalizeData(raw);
     showError(null);
   } catch (e) {
     if (e.message !== 'unauthorized') showError('Kunne ikke indlæse data. Tjek din forbindelse.');
@@ -101,6 +140,26 @@ function formatDate(iso) {
   return d.toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ---------- Tabs ---------- */
+
+function initTabs() {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-panel').forEach((p) => {
+        p.classList.toggle('hidden', p.id !== `tab-${activeTab}`);
+      });
+    });
+  });
+}
+
+/* ---------- Master render ---------- */
+
 function render() {
   const hasName = Boolean(myName);
   $('name-section').classList.toggle('hidden', hasName);
@@ -114,6 +173,12 @@ function render() {
   $('who-am-i-name').textContent = myName;
   renderCountdown();
   renderDates();
+  renderDrinks();
+  renderGames();
+  renderMeals();
+  renderPoints();
+  renderChecklist();
+  checkNewDrinks();
 }
 
 function renderNameChips() {
@@ -139,6 +204,14 @@ async function chooseName(name) {
     render();
   }
 }
+
+function switchName() {
+  localStorage.removeItem(NAME_KEY);
+  myName = null;
+  render();
+}
+
+/* ---------- Countdown + Calendar (unchanged core) ---------- */
 
 function renderCountdown() {
   const banner = $('countdown-banner');
@@ -291,7 +364,7 @@ async function addDate() {
   const input = $('new-date-input');
   if (!input.value) return;
   if (data.dates.some((d) => d.date === input.value)) return;
-  const entry = { id: `${input.value}-${Date.now()}`, date: input.value, location: '', time: '', votes: {} };
+  const entry = { id: uid(), date: input.value, location: '', time: '', votes: {} };
   await saveData({ ...data, dates: [...data.dates, entry] });
   input.value = '';
 }
@@ -321,13 +394,333 @@ async function setTime(id, time) {
   await saveData(next);
 }
 
-function switchName() {
-  localStorage.removeItem(NAME_KEY);
-  myName = null;
-  render();
+/* ---------- Drinks ---------- */
+
+function renderDrinks() {
+  const list = $('drinks-list');
+  list.innerHTML = '';
+
+  const hasPermissionAsked = 'Notification' in window && Notification.permission === 'default';
+  $('notif-hint').classList.toggle('hidden', !hasPermissionAsked);
+
+  const sorted = [...data.drinks].sort((a, b) => b.timestamp - a.timestamp);
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty">Ingen bestillinger endnu.</div>';
+    return;
+  }
+
+  sorted.forEach((d) => {
+    const card = document.createElement('div');
+    card.className = 'drink-card' + (d.done ? ' done' : '');
+
+    const info = document.createElement('div');
+    info.className = 'drink-info';
+    info.innerHTML = `<span class="drink-item-name">${escapeHtml(d.item)}</span><span class="drink-meta">${escapeHtml(d.person)} · ${formatTime(d.timestamp)}</span>`;
+    card.appendChild(info);
+
+    const btn = document.createElement('button');
+    btn.className = 'done-btn' + (d.done ? ' is-done' : '');
+    btn.textContent = d.done ? '✓ Lavet' : 'Marker lavet';
+    btn.onclick = () => toggleDrinkDone(d.id);
+    card.appendChild(btn);
+
+    list.appendChild(card);
+  });
 }
 
+async function orderDrink() {
+  const input = $('drink-item-input');
+  const item = input.value.trim();
+  if (!item || !myName) return;
+  const entry = { id: uid(), item, person: myName, timestamp: Date.now(), done: false };
+  markDrinkSeen(entry.id);
+  await saveData({ ...data, drinks: [...data.drinks, entry] });
+  input.value = '';
+}
+
+async function toggleDrinkDone(id) {
+  const next = { ...data, drinks: data.drinks.map((d) => (d.id === id ? { ...d, done: !d.done } : d)) };
+  await saveData(next);
+}
+
+function getSeenDrinkIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_DRINKS_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function markDrinkSeen(id) {
+  const seen = getSeenDrinkIds();
+  seen.add(id);
+  localStorage.setItem(SEEN_DRINKS_KEY, JSON.stringify([...seen]));
+}
+
+function checkNewDrinks() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const seen = getSeenDrinkIds();
+  const unseen = data.drinks.filter((d) => !seen.has(d.id) && d.person !== myName);
+  unseen.forEach((d) => {
+    new Notification('Ny drink-bestilling 🍺', {
+      body: `${d.person} bestilte: ${d.item}`,
+    });
+    markDrinkSeen(d.id);
+  });
+  // Mark all currently-known drinks as seen so we never re-notify on reload
+  data.drinks.forEach((d) => markDrinkSeen(d.id));
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(() => renderDrinks());
+}
+
+/* ---------- Games ---------- */
+
+function renderGames() {
+  const grid = $('games-list');
+  grid.innerHTML = '';
+
+  if (data.games.length === 0) {
+    grid.innerHTML = '<div class="empty">Ingen spilforslag endnu.</div>';
+    return;
+  }
+
+  data.games.forEach((g) => {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+
+    const remove = document.createElement('button');
+    remove.className = 'game-remove';
+    remove.textContent = '✕';
+    remove.onclick = () => removeGame(g.id);
+    card.appendChild(remove);
+
+    if (g.iconUrl) {
+      const img = document.createElement('img');
+      img.className = 'game-icon';
+      img.src = g.iconUrl;
+      img.alt = g.name;
+      img.onerror = () => { img.replaceWith(fallbackIcon()); };
+      card.appendChild(img);
+    } else {
+      card.appendChild(fallbackIcon());
+    }
+
+    const name = document.createElement('div');
+    name.className = 'game-name';
+    name.textContent = g.name;
+    card.appendChild(name);
+
+    const meta = document.createElement('div');
+    meta.className = 'game-meta';
+    meta.textContent = `tilføjet af ${g.addedBy}`;
+    card.appendChild(meta);
+
+    grid.appendChild(card);
+  });
+}
+
+function fallbackIcon() {
+  const div = document.createElement('div');
+  div.className = 'game-icon-fallback';
+  div.textContent = '🎮';
+  return div;
+}
+
+async function addGame() {
+  const nameInput = $('game-name-input');
+  const iconInput = $('game-icon-input');
+  const name = nameInput.value.trim();
+  if (!name || !myName) return;
+  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName };
+  await saveData({ ...data, games: [...data.games, entry] });
+  nameInput.value = '';
+  iconInput.value = '';
+}
+
+async function removeGame(id) {
+  await saveData({ ...data, games: data.games.filter((g) => g.id !== id) });
+}
+
+/* ---------- Meals ---------- */
+
+function renderMeals() {
+  ['snacks', 'lunch', 'dinner'].forEach((meal) => {
+    const container = $(`meal-list-${meal}`);
+    container.innerHTML = '';
+    const items = data.meals[meal] || [];
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty" style="padding:14px 0;">Intet tilføjet endnu.</div>';
+      return;
+    }
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'meal-item';
+      row.innerHTML = `<span class="meal-item-name">${escapeHtml(item.name)}</span><span class="meal-item-by">${escapeHtml(item.addedBy)}</span>`;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'meal-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.onclick = () => removeMealItem(meal, item.id);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+  });
+}
+
+async function addMealItem(meal) {
+  const input = document.querySelector(`.meal-input[data-meal="${meal}"]`);
+  const name = input.value.trim();
+  if (!name || !myName) return;
+  const entry = { id: uid(), name, addedBy: myName };
+  const nextMeals = { ...data.meals, [meal]: [...(data.meals[meal] || []), entry] };
+  await saveData({ ...data, meals: nextMeals });
+  input.value = '';
+}
+
+async function removeMealItem(meal, id) {
+  const nextMeals = { ...data.meals, [meal]: (data.meals[meal] || []).filter((i) => i.id !== id) };
+  await saveData({ ...data, meals: nextMeals });
+}
+
+/* ---------- Points ---------- */
+
+function renderPoints() {
+  const winnerSelect = $('point-winner-select');
+  const currentVal = winnerSelect.value;
+  winnerSelect.innerHTML = data.people.map((p) => `<option value="${p}">${p}</option>`).join('');
+  if (data.people.includes(currentVal)) winnerSelect.value = currentVal;
+
+  const totals = {};
+  data.people.forEach((p) => (totals[p] = 0));
+  data.points.forEach((entry) => {
+    totals[entry.winner] = (totals[entry.winner] || 0) + entry.points;
+  });
+  const maxScore = Math.max(1, ...Object.values(totals));
+
+  const board = $('leaderboard');
+  board.innerHTML = '';
+  const ranked = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  ranked.forEach(([name, score], i) => {
+    const row = document.createElement('div');
+    row.className = 'leaderboard-row';
+    row.innerHTML = `
+      <span class="leaderboard-rank">#${i + 1}</span>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between;">
+          <span class="leaderboard-name">${escapeHtml(name)}</span>
+          <span class="leaderboard-score">${score}</span>
+        </div>
+        <div class="leaderboard-bar-track"><div class="leaderboard-bar-fill" style="width:${(score / maxScore) * 100}%"></div></div>
+      </div>`;
+    board.appendChild(row);
+  });
+
+  const log = $('points-log');
+  log.innerHTML = '';
+  const sortedLog = [...data.points].sort((a, b) => b.timestamp - a.timestamp).slice(0, 25);
+  sortedLog.forEach((entry) => {
+    const row = document.createElement('div');
+    row.className = 'point-log-row';
+    row.innerHTML = `<span>${escapeHtml(entry.winner)} vandt <strong style="color:var(--text)">${escapeHtml(entry.game)}</strong> (+${entry.points})</span><span>${formatTime(entry.timestamp)}</span>`;
+    log.appendChild(row);
+  });
+}
+
+async function addPointEntry() {
+  const gameInput = $('point-game-input');
+  const winnerSelect = $('point-winner-select');
+  const amountInput = $('point-amount-input');
+  const game = gameInput.value.trim();
+  const winner = winnerSelect.value;
+  const points = parseInt(amountInput.value, 10) || 1;
+  if (!game || !winner) return;
+  const entry = { id: uid(), game, winner, points, timestamp: Date.now() };
+  await saveData({ ...data, points: [...data.points, entry] });
+  gameInput.value = '';
+  amountInput.value = '1';
+}
+
+/* ---------- Checklist ---------- */
+
+function renderChecklist() {
+  const box = $('checklist-items');
+  box.innerHTML = '';
+  const myChecked = data.checklistChecked[myName] || {};
+
+  data.checklistItems.forEach((item) => {
+    const isChecked = Boolean(myChecked[item.id]);
+    const row = document.createElement('div');
+    row.className = 'checklist-row' + (isChecked ? ' checked' : '');
+    row.onclick = (e) => {
+      if (e.target.closest('.checklist-remove')) return;
+      toggleChecklistItem(item.id);
+    };
+
+    const box2 = document.createElement('div');
+    box2.className = 'checklist-checkbox';
+    box2.textContent = isChecked ? '✓' : '';
+    row.appendChild(box2);
+
+    const label = document.createElement('span');
+    label.className = 'checklist-label' + (isChecked ? ' checked-text' : '');
+    label.textContent = item.label;
+    row.appendChild(label);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'checklist-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = () => removeChecklistItem(item.id);
+    row.appendChild(removeBtn);
+
+    box.appendChild(row);
+  });
+}
+
+async function toggleChecklistItem(itemId) {
+  const myChecked = { ...(data.checklistChecked[myName] || {}) };
+  myChecked[itemId] = !myChecked[itemId];
+  const next = { ...data, checklistChecked: { ...data.checklistChecked, [myName]: myChecked } };
+  await saveData(next);
+}
+
+async function addChecklistItem() {
+  const input = $('checklist-new-input');
+  const label = input.value.trim();
+  if (!label) return;
+  const entry = { id: uid(), label };
+  await saveData({ ...data, checklistItems: [...data.checklistItems, entry] });
+  input.value = '';
+}
+
+async function removeChecklistItem(itemId) {
+  const nextChecked = {};
+  Object.entries(data.checklistChecked).forEach(([person, items]) => {
+    const copy = { ...items };
+    delete copy[itemId];
+    nextChecked[person] = copy;
+  });
+  await saveData({
+    ...data,
+    checklistItems: data.checklistItems.filter((i) => i.id !== itemId),
+    checklistChecked: nextChecked,
+  });
+}
+
+/* ---------- Utils ---------- */
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- Init ---------- */
+
 async function init() {
+  initTabs();
+
   const savedCode = localStorage.getItem(CODE_KEY);
   showGate(!savedCode);
 
@@ -364,6 +757,33 @@ async function init() {
     } catch (e) {}
   };
 
+  $('drink-order-btn').onclick = orderDrink;
+  $('drink-item-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') orderDrink();
+  });
+  $('enable-notif-btn').onclick = requestNotificationPermission;
+
+  $('game-add-btn').onclick = addGame;
+  $('game-name-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addGame();
+  });
+
+  document.querySelectorAll('.meal-add-btn').forEach((btn) => {
+    btn.onclick = () => addMealItem(btn.dataset.meal);
+  });
+  document.querySelectorAll('.meal-input').forEach((input) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addMealItem(input.dataset.meal);
+    });
+  });
+
+  $('point-add-btn').onclick = addPointEntry;
+
+  $('checklist-add-btn').onclick = addChecklistItem;
+  $('checklist-new-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addChecklistItem();
+  });
+
   if (savedCode) {
     try {
       await loadData();
@@ -381,7 +801,7 @@ function startPolling() {
       await loadData();
       render();
     } catch (e) {}
-  }, 20000);
+  }, 15000);
 }
 
 init();

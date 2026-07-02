@@ -68,15 +68,112 @@
           </div>
         </section>
 
-        <section class="card">
-          <h2 class="h2">Foreslå en dato</h2>
-          <div class="inline-form">
-            <input id="new-date-input" class="input" type="date" />
-            <button id="add-date-btn" class="primary-btn">+ Tilføj</button>
-          </div>
-        </section>
+        <nav id="tab-bar" class="tab-bar">
+          <button class="tab-btn active" data-tab="calendar">Kalender</button>
+          <button class="tab-btn" data-tab="drinks">Drinks</button>
+          <button class="tab-btn" data-tab="games">Spil</button>
+          <button class="tab-btn" data-tab="food">Mad</button>
+          <button class="tab-btn" data-tab="points">Point</button>
+          <button class="tab-btn" data-tab="checklist">Tjekliste</button>
+        </nav>
 
-        <section id="dates-list" class="list"></section>
+        <div id="tab-calendar" class="tab-panel">
+          <section class="card">
+            <h2 class="h2">Foreslå en dato</h2>
+            <div class="inline-form">
+              <input id="new-date-input" class="input" type="date" />
+              <button id="add-date-btn" class="primary-btn">+ Tilføj</button>
+            </div>
+          </section>
+          <section id="dates-list" class="list"></section>
+        </div>
+
+        <div id="tab-drinks" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Bestil en drink</h2>
+            <p class="muted">Alle med fanen åben får besked med det samme.</p>
+            <div class="inline-form">
+              <input id="drink-item-input" class="input" placeholder="Hvad vil du have? (fx en Fadøl)" />
+              <button id="drink-order-btn" class="primary-btn">Bestil</button>
+            </div>
+            <div id="notif-hint" class="muted small hidden" style="margin-top:8px;">
+              Tips: <button id="enable-notif-btn" class="link-btn">slå notifikationer til</button> for at få besked om nye bestillinger.
+            </div>
+          </section>
+          <section id="drinks-list" class="list"></section>
+        </div>
+
+        <div id="tab-games" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Foreslå et spil</h2>
+            <div class="inline-form">
+              <input id="game-name-input" class="input" placeholder="Spilnavn" />
+              <button id="game-add-btn" class="primary-btn">+ Tilføj</button>
+            </div>
+            <div class="inline-form" style="margin-top:8px;">
+              <input id="game-icon-input" class="input" placeholder="Link til ikon/cover (valgfrit)" />
+            </div>
+          </section>
+          <section id="games-list" class="game-grid"></section>
+        </div>
+
+        <div id="tab-food" class="tab-panel hidden">
+          <section class="meal-columns">
+            <div class="meal-column" data-meal="snacks">
+              <h3 class="h3">Snacks</h3>
+              <div class="inline-form">
+                <input class="input meal-input" placeholder="Tilføj snack" data-meal="snacks" />
+                <button class="icon-btn meal-add-btn" data-meal="snacks">+</button>
+              </div>
+              <div class="meal-list" id="meal-list-snacks"></div>
+            </div>
+            <div class="meal-column" data-meal="lunch">
+              <h3 class="h3">Frokost</h3>
+              <div class="inline-form">
+                <input class="input meal-input" placeholder="Tilføj til frokost" data-meal="lunch" />
+                <button class="icon-btn meal-add-btn" data-meal="lunch">+</button>
+              </div>
+              <div class="meal-list" id="meal-list-lunch"></div>
+            </div>
+            <div class="meal-column" data-meal="dinner">
+              <h3 class="h3">Aftensmad</h3>
+              <div class="inline-form">
+                <input class="input meal-input" placeholder="Tilføj til aftensmad" data-meal="dinner" />
+                <button class="icon-btn meal-add-btn" data-meal="dinner">+</button>
+              </div>
+              <div class="meal-list" id="meal-list-dinner"></div>
+            </div>
+          </section>
+        </div>
+
+        <div id="tab-points" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Registrér en sejr</h2>
+            <div class="inline-form">
+              <input id="point-game-input" class="input-small" placeholder="Spil" />
+              <select id="point-winner-select" class="select"></select>
+              <input id="point-amount-input" class="input-small" type="number" value="1" min="1" style="width:60px;" />
+              <button id="point-add-btn" class="primary-btn">Tilføj</button>
+            </div>
+          </section>
+          <section class="card">
+            <h2 class="h2">Stilling</h2>
+            <div id="leaderboard" class="leaderboard"></div>
+          </section>
+          <section id="points-log" class="list"></section>
+        </div>
+
+        <div id="tab-checklist" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Din huskeliste</h2>
+            <p class="muted">Hver person har sin egen liste — I ser kun jeres eget flueben.</p>
+            <div id="checklist-items" class="checklist"></div>
+            <div class="inline-form" style="margin-top:12px;">
+              <input id="checklist-new-input" class="input" placeholder="Tilføj punkt til huskelisten" />
+              <button id="checklist-add-btn" class="icon-btn">+</button>
+            </div>
+          </section>
+        </div>
       </div>
 
       <footer class="footer">Data deles mellem alle der har adgangskoden.</footer>

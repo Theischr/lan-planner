@@ -288,6 +288,203 @@ body {
   font-family: var(--mono);
 }
 
+.small { font-size: 11px; }
+
+/* Tabs */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+}
+.tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab-panel.hidden { display: none; }
+
+/* Drinks */
+.drink-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.drink-card.done { opacity: 0.5; }
+.drink-info { display: flex; flex-direction: column; gap: 2px; }
+.drink-item-name { font-size: 13.5px; font-weight: 600; }
+.drink-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.done-btn {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.done-btn.is-done { background: var(--green); color: #08131A; }
+
+/* Games */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+.game-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  position: relative;
+}
+.game-icon {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg);
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+.game-icon-fallback {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--muted);
+}
+.game-name { font-size: 12.5px; font-weight: 600; }
+.game-meta { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.game-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(11,15,20,0.8);
+  border: none;
+  color: var(--muted);
+  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* Meals */
+.meal-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+.meal-column {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.h3 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--cyan); font-family: var(--mono); }
+.meal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.meal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+}
+.meal-item-name { flex: 1; }
+.meal-item-by { font-size: 10.5px; color: var(--muted); margin-right: 6px; }
+.meal-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
+
+/* Points */
+.leaderboard { display: flex; flex-direction: column; gap: 8px; }
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+.leaderboard-rank {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  width: 20px;
+}
+.leaderboard-name { flex: 1; font-size: 13.5px; font-weight: 600; }
+.leaderboard-score { font-family: var(--mono); font-size: 14px; color: var(--cyan); font-weight: 700; }
+.leaderboard-bar-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.leaderboard-bar-fill { height: 100%; background: var(--cyan); }
+.point-log-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Checklist */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.checklist-row.checked { border-color: var(--green); }
+.checklist-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--green);
+}
+.checklist-row.checked .checklist-checkbox { background: rgba(62,207,142,0.15); border-color: var(--green); }
+.checklist-label { flex: 1; font-size: 13px; }
+.checklist-label.checked-text { text-decoration: line-through; color: var(--muted); }
+.checklist-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
+
 @media (max-width: 420px) {
   .countdown-timer { font-size: 22px; }
 }

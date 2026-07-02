@@ -67,6 +67,19 @@ Sæt derefter `ACCESS_CODE` og KV-bindingen som beskrevet i punkt 5-6 ovenfor (d
 - Alt gemmes centralt i KV, så I altid ser samme kalender, stemmer og aftalt dato, uanset hvem der åbner den.
 - Appen poller automatisk hvert 20. sekund og har en manuel opdater-knap (↻) i toppen.
 
-## Senere: noter og spilliste
+## Nye faner (v2)
 
-Datastrukturen (`{ people, dates, agreedDateId }`) i KV kan let udvides med f.eks. `notes` og `requiredGames`-felter, og `app.js`/`index.html` kan få nye faner der læser/skriver de samme steder. Sig til, når du er klar til den del.
+Appen har nu faner: **Kalender, Drinks, Spil, Mad, Point, Tjekliste**. Alt sammen ligger stadig i den samme KV-blob — ingen nye Cloudflare-ressourcer eller ekstra opsætning krævet, bare de samme filer opdateret.
+
+- **Drinks**: Bestil noget, andre ser det live (op til 15 sek. forsinkelse via polling). Klik "slå notifikationer til" for at få en browser-notifikation når nogen bestiller — virker så længe du har fanen åben et sted, også i baggrunden. Kræver ikke noget setup fra dig, det er indbygget i browseren.
+- **Spil**: Tilføj spilnavn + valgfrit link til et ikon/cover-billede (fx fra Steam eller Google-billeder). Virker linket ikke, falder den tilbage til et 🎮-ikon.
+- **Mad**: Tre lister (Snacks/Frokost/Aftensmad), alle kan tilføje og fjerne punkter.
+- **Point**: Registrér en sejr (spil + vinder + antal point), se automatisk opdateret stilling.
+- **Tjekliste**: Standard-punkter (PC, skærm, mus, tastatur, musemåtte, kabler) er forudfyldt. Hver person har sit eget flueben — I deler listen, men ikke hinandens afkrydsninger.
+
+Efter du har pushet disse filer til dit GitHub-repo (bare erstat `index.html`, `style.css`, `app.js` — `functions/api/data.js` og `wrangler.toml` er uændrede), skal Cloudflare automatisk redeploye.
+
+## Kommer senere
+
+- **Galleri/meme-slideshow**: kræver en beslutning om billedopbevaring (base64 i jeres eksisterende KV vs. en ny R2-bucket).
+- **Spotify-styring**: kræver at du opretter en Spotify Developer-app på developer.spotify.com og giver et Client ID.
