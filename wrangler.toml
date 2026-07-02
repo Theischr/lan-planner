@@ -7,7 +7,7 @@ binding = "DATA_KV"
 id = "c3700f7d096a4b3782f2132b1392579b"
 
 [vars]
-ACCESS_CODE = "Fadøl"
+ACCESS_CODE = "Fadol"
 
 [env.preview]
 
@@ -16,4 +16,4 @@ binding = "DATA_KV"
 id = "c3700f7d096a4b3782f2132b1392579b"
 
 [env.preview.vars]
-ACCESS_CODE = "Fadøl"
+ACCESS_CODE = "Fadol"
