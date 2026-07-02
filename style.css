@@ -326,9 +326,26 @@ body {
   gap: 10px;
 }
 .drink-card.done { opacity: 0.5; }
-.drink-info { display: flex; flex-direction: column; gap: 2px; }
+.drink-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .drink-item-name { font-size: 13.5px; font-weight: 600; }
 .drink-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.drink-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.drink-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 6px;
+}
+.drink-remove:hover { color: var(--red); }
+.drinks-scroll {
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.drinks-scroll::-webkit-scrollbar { width: 6px; }
+.drinks-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .done-btn {
   background: transparent;
   border: 1px solid var(--green);

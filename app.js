@@ -414,6 +414,10 @@ function renderDrinks() {
   $('notif-hint').classList.toggle('hidden', !hasPermissionAsked);
 
   const sorted = [...data.drinks].sort((a, b) => b.timestamp - a.timestamp);
+  const clearBtn = $('drinks-clear-done-btn');
+  const hasDone = data.drinks.some((d) => d.done);
+  if (clearBtn) clearBtn.classList.toggle('hidden', !hasDone);
+
   if (sorted.length === 0) {
     list.innerHTML = '<div class="empty">Ingen bestillinger endnu.</div>';
     return;
@@ -428,11 +432,23 @@ function renderDrinks() {
     info.innerHTML = `<span class="drink-item-name">${escapeHtml(d.item)}</span><span class="drink-meta">${escapeHtml(d.person)} · ${formatTime(d.timestamp)}</span>`;
     card.appendChild(info);
 
+    const actions = document.createElement('div');
+    actions.className = 'drink-actions';
+
     const btn = document.createElement('button');
     btn.className = 'done-btn' + (d.done ? ' is-done' : '');
     btn.textContent = d.done ? '✓ Lavet' : 'Marker lavet';
     btn.onclick = () => toggleDrinkDone(d.id);
-    card.appendChild(btn);
+    actions.appendChild(btn);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'drink-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Fjern bestilling';
+    removeBtn.onclick = () => removeDrink(d.id);
+    actions.appendChild(removeBtn);
+
+    card.appendChild(actions);
 
     list.appendChild(card);
   });
@@ -451,6 +467,14 @@ async function orderDrink() {
 async function toggleDrinkDone(id) {
   const next = { ...data, drinks: data.drinks.map((d) => (d.id === id ? { ...d, done: !d.done } : d)) };
   await saveData(next);
+}
+
+async function removeDrink(id) {
+  await saveData({ ...data, drinks: data.drinks.filter((d) => d.id !== id) });
+}
+
+async function clearDoneDrinks() {
+  await saveData({ ...data, drinks: data.drinks.filter((d) => !d.done) });
 }
 
 function getSeenDrinkIds() {
@@ -1173,6 +1197,7 @@ async function init() {
     if (e.key === 'Enter') orderDrink();
   });
   $('enable-notif-btn').onclick = requestNotificationPermission;
+  $('drinks-clear-done-btn').onclick = clearDoneDrinks;
 
   $('game-add-btn').onclick = addGame;
   $('game-name-input').addEventListener('keydown', (e) => {
