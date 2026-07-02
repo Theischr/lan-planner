@@ -75,6 +75,7 @@ function normalizeData(raw) {
   if (!next.drinks) next.drinks = [];
   if (!next.drinkMenu) next.drinkMenu = [];
   if (!next.games) next.games = [];
+  next.games = next.games.map((g) => ({ ...g, votes: g.votes || {} }));
   if (!next.points) next.points = [];
   if (!next.sounds) next.sounds = [];
   if (!next.speedResults) next.speedResults = [];
@@ -630,9 +631,14 @@ function renderGames() {
     return;
   }
 
-  data.games.forEach((g) => {
+  const withCounts = data.games.map((g) => ({ g, count: Object.keys(g.votes || {}).length }));
+  const maxCount = Math.max(0, ...withCounts.map((x) => x.count));
+  const sorted = [...withCounts].sort((a, b) => b.count - a.count);
+
+  sorted.forEach(({ g, count }) => {
+    const isTop = count > 0 && count === maxCount;
     const card = document.createElement('div');
-    card.className = 'game-card';
+    card.className = 'game-card' + (isTop ? ' game-card-top' : '');
 
     const remove = document.createElement('button');
     remove.className = 'game-remove';
@@ -656,13 +662,57 @@ function renderGames() {
     name.textContent = g.name;
     card.appendChild(name);
 
+    if (isTop) {
+      const tag = document.createElement('div');
+      tag.className = 'date-tag best';
+      tag.textContent = 'Mest stemt';
+      card.appendChild(tag);
+    }
+
     const meta = document.createElement('div');
     meta.className = 'game-meta';
     meta.textContent = `tilføjet af ${g.addedBy}`;
     card.appendChild(meta);
 
+    const myVoted = Boolean((g.votes || {})[myName]);
+    const voteBtn = document.createElement('button');
+    voteBtn.className = 'game-vote-btn' + (myVoted ? ' voted' : '');
+    voteBtn.textContent = `${myVoted ? '★' : '☆'} ${count}`;
+    voteBtn.onclick = () => toggleGameVote(g.id);
+    card.appendChild(voteBtn);
+
+    const ledPanel = document.createElement('div');
+    ledPanel.className = 'led-panel game-led-panel';
+    data.people.forEach((p) => {
+      const voted = Boolean((g.votes || {})[p]);
+      const item = document.createElement('div');
+      item.className = 'led-item';
+      item.title = `${p}: ${voted ? 'Stemt' : 'Ikke stemt'}`;
+      item.innerHTML = `<span class="led" style="background:${voted ? 'var(--green)' : 'var(--border)'}"></span><span class="led-label">${p}</span>`;
+      ledPanel.appendChild(item);
+    });
+    card.appendChild(ledPanel);
+
     grid.appendChild(card);
   });
+}
+
+async function toggleGameVote(gameId) {
+  if (!myName) return;
+  const next = {
+    ...data,
+    games: data.games.map((g) => {
+      if (g.id !== gameId) return g;
+      const votes = { ...(g.votes || {}) };
+      if (votes[myName]) {
+        delete votes[myName];
+      } else {
+        votes[myName] = true;
+      }
+      return { ...g, votes };
+    }),
+  };
+  await saveData(next);
 }
 
 function fallbackIcon() {
@@ -677,7 +727,7 @@ async function addGame() {
   const iconInput = $('game-icon-input');
   const name = nameInput.value.trim();
   if (!name || !myName) return;
-  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName };
+  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName, votes: {} };
   await saveData({ ...data, games: [...data.games, entry] });
   nameInput.value = '';
   iconInput.value = '';
