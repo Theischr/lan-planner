@@ -410,8 +410,6 @@ body {
 }
 
 /* Meals */
-.meal-columns {
-}
 .meal-column {
   background: var(--panel);
   border: 1px solid var(--border);

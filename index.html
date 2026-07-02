@@ -106,6 +106,17 @@
           </section>
 
           <section class="card">
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
+              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
+            </div>
+            <div id="wheel-result" class="wheel-result hidden"></div>
+            <div id="drink-menu-list" class="game-grid"></div>
+          </section>
+
+          <section id="drinks-list" class="list"></section>
+
+          <section class="card">
             <h2 class="h2">Tilføj til drinkmenuen</h2>
             <div class="inline-form">
               <input id="menu-drink-name" class="input" placeholder="Navn på drinken" />
@@ -118,20 +129,11 @@
               <button id="menu-drink-add-btn" class="primary-btn">+ Tilføj</button>
             </div>
           </section>
-
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
-              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
-            </div>
-            <div id="wheel-result" class="wheel-result hidden"></div>
-            <div id="drink-menu-list" class="game-grid"></div>
-          </section>
-
-          <section id="drinks-list" class="list"></section>
         </div>
 
         <div id="tab-sounds" class="tab-panel hidden">
+          <section id="sound-grid" class="sound-grid"></section>
+
           <section class="card">
             <h2 class="h2">Tilføj en lyd</h2>
             <p class="muted">Indsæt et link til en lydfil, eller upload en kort fil selv (helst under ~300 KB — I skal selv levere lydene).</p>
@@ -144,7 +146,6 @@
               <button id="sound-add-btn" class="primary-btn">+ Tilføj</button>
             </div>
           </section>
-          <section id="sound-grid" class="sound-grid"></section>
         </div>
 
         <div id="tab-timer" class="tab-panel hidden">
