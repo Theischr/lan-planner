@@ -24,7 +24,7 @@ body {
 .hidden { display: none !important; }
 
 .page { min-height: 100vh; padding: 24px 16px; }
-.wrap { max-width: 640px; margin: 0 auto; }
+.wrap { max-width: 700px; margin: 0 auto; }
 
 .header {
   display: flex;
@@ -396,9 +396,6 @@ body {
 
 /* Meals */
 .meal-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
 }
 .meal-column {
   background: var(--panel);
