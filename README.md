@@ -12,14 +12,14 @@ Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build
 
 ## Deploy — via Cloudflare-dashboardet (nemmest)
 
-1. **Læg koden på GitHub.** Opret et nyt repo, f.eks. `Theischr/lan-planner`, og push denne mappe til det.
+1. **Læg koden på GitHub.** Opret et nyt repo, og push denne mappe til det.
    ```bash
    cd lan-planner
    git init
    git add .
    git commit -m "Initial LAN planner"
    git branch -M main
-   git remote add origin https://github.com/Theischr/lan-planner.git
+   git remote add 
    git push -u origin main
    ```
 
@@ -45,7 +45,7 @@ Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build
 
 7. **Redeploy** projektet én gang (Settings-ændringer kræver en ny deployment for at slå igennem — gå til **Deployments** og klik **Retry deployment**, eller push en tom commit).
 
-8. Cloudflare giver jer en URL som `https://lan-planner.pages.dev` — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
+8. Cloudflare giver jer en URL — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
 
 ## Deploy — via Wrangler CLI (alternativ)
 
@@ -90,10 +90,6 @@ Ny fane **Musik** lader jer styre afspilning via Spotify Connect (play/pause/ski
 - Kræver Spotify Premium på den konto der skal styre afspilningen, og at Spotify-appen er åben/cast'et til jeres Google-højtaler mindst én gang, så den dukker op i enhedslisten.
 
 **Vigtigt ved deploy:** sørg for at `spotify-callback.html` også bliver pushet til GitHub-repoet sammen med de andre filer, og at `spotify.js` er inkluderet — ellers virker Musik-fanen ikke.
-
-## Kommer senere
-
-- **Galleri/meme-slideshow**: droppet for nu, kan tages op igen senere.
 
 ## Endnu flere faner (v3)
 
