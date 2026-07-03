@@ -537,6 +537,14 @@ body {
 .checklist-label { flex: 1; font-size: 13px; }
 .checklist-label.checked-text { text-decoration: line-through; color: var(--muted); }
 .checklist-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
+.shopping-item-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
 
 /* Spotify */
 .spotify-track { display: flex; align-items: center; gap: 14px; }

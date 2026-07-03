@@ -32,6 +32,8 @@ function emptyData() {
     checklistChecked: {},
     sounds: [],
     speedResults: [],
+    shoppingExtra: [],
+    shoppingChecked: {},
   };
 }
 
@@ -79,6 +81,8 @@ function normalizeData(raw) {
   if (!next.points) next.points = [];
   if (!next.sounds) next.sounds = [];
   if (!next.speedResults) next.speedResults = [];
+  if (!next.shoppingExtra) next.shoppingExtra = [];
+  if (!next.shoppingChecked) next.shoppingChecked = {};
   return next;
 }
 
@@ -184,6 +188,7 @@ function render() {
   renderDrinkMenu();
   renderGames();
   renderMeals();
+  renderShoppingList();
   renderPoints();
   renderChecklist();
   renderSounds();
@@ -843,6 +848,118 @@ async function removeMealItem(meal, id) {
   await saveData({ ...data, meals: nextMeals });
 }
 
+/* ---------- Shopping list (derived from Mad + Drinks) ---------- */
+
+const MEAL_LABELS = { snacks: 'Snacks', lunch: 'Frokost', dinner: 'Aftensmad' };
+
+function buildShoppingSections() {
+  const sections = [];
+  ['snacks', 'lunch', 'dinner'].forEach((meal) => {
+    const items = (data.meals[meal] || []).map((i) => ({ key: `meal:${meal}:${i.id}`, name: i.name, imageUrl: i.imageUrl }));
+    if (items.length) sections.push({ title: MEAL_LABELS[meal], items });
+  });
+  const drinkItems = data.drinkMenu.map((d) => ({ key: `drinkmenu:${d.id}`, name: d.name, imageUrl: d.imageUrl }));
+  if (drinkItems.length) sections.push({ title: 'Drinks', items: drinkItems });
+  const extraItems = data.shoppingExtra.map((e) => ({ key: `extra:${e.id}`, name: e.name, imageUrl: '' }));
+  if (extraItems.length) sections.push({ title: 'Andre indkøb', items: extraItems, removable: true });
+  return sections;
+}
+
+function renderShoppingList() {
+  const box = $('shopping-list-sections');
+  if (!box) return;
+  box.innerHTML = '';
+
+  const sections = buildShoppingSections();
+  if (sections.length === 0) {
+    box.innerHTML = '<div class="empty">Tilføj noget under Mad eller Drinks, så dukker det op her.</div>';
+    return;
+  }
+
+  sections.forEach((section) => {
+    const card = document.createElement('section');
+    card.className = 'card';
+
+    const h = document.createElement('h3');
+    h.className = 'h3';
+    h.textContent = section.title;
+    card.appendChild(h);
+
+    const list = document.createElement('div');
+    list.className = 'checklist';
+
+    section.items.forEach((item) => {
+      const isChecked = Boolean(data.shoppingChecked[item.key]);
+      const row = document.createElement('div');
+      row.className = 'checklist-row' + (isChecked ? ' checked' : '');
+      row.onclick = (e) => {
+        if (e.target.closest('.checklist-remove')) return;
+        toggleShoppingItem(item.key);
+      };
+
+      const box2 = document.createElement('div');
+      box2.className = 'checklist-checkbox';
+      box2.textContent = isChecked ? '✓' : '';
+      row.appendChild(box2);
+
+      if (item.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'shopping-item-thumb';
+        img.src = item.imageUrl;
+        img.alt = item.name;
+        img.onerror = () => img.remove();
+        row.appendChild(img);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'checklist-label' + (isChecked ? ' checked-text' : '');
+      label.textContent = item.name;
+      row.appendChild(label);
+
+      if (section.removable) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'checklist-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.onclick = () => removeShoppingExtra(item.key.replace('extra:', ''));
+        row.appendChild(removeBtn);
+      }
+
+      list.appendChild(row);
+    });
+
+    card.appendChild(list);
+    box.appendChild(card);
+  });
+}
+
+async function toggleShoppingItem(key) {
+  const next = { ...data.shoppingChecked, [key]: !data.shoppingChecked[key] };
+  await saveData({ ...data, shoppingChecked: next });
+}
+
+async function uncheckAllShopping() {
+  await saveData({ ...data, shoppingChecked: {} });
+}
+
+async function addShoppingExtra() {
+  const input = $('shopping-extra-input');
+  const name = input.value.trim();
+  if (!name || !myName) return;
+  const entry = { id: uid(), name, addedBy: myName };
+  await saveData({ ...data, shoppingExtra: [...data.shoppingExtra, entry] });
+  input.value = '';
+}
+
+async function removeShoppingExtra(id) {
+  const nextChecked = { ...data.shoppingChecked };
+  delete nextChecked[`extra:${id}`];
+  await saveData({
+    ...data,
+    shoppingExtra: data.shoppingExtra.filter((e) => e.id !== id),
+    shoppingChecked: nextChecked,
+  });
+}
+
 /* ---------- Points ---------- */
 
 function renderPoints() {
@@ -1261,6 +1378,12 @@ async function init() {
   $('sound-add-btn').onclick = addSound;
 
   $('speedtest-run-btn').onclick = runSpeedTest;
+
+  $('shopping-uncheck-all-btn').onclick = uncheckAllShopping;
+  $('shopping-extra-add-btn').onclick = addShoppingExtra;
+  $('shopping-extra-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addShoppingExtra();
+  });
 
   if (savedCode) {
     try {

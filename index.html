@@ -73,6 +73,7 @@
           <button class="tab-btn" data-tab="drinks">Drinks</button>
           <button class="tab-btn" data-tab="games">Spil</button>
           <button class="tab-btn" data-tab="food">Mad</button>
+          <button class="tab-btn" data-tab="shopping">Indkøb</button>
           <button class="tab-btn" data-tab="points">Point</button>
           <button class="tab-btn" data-tab="checklist">Tjekliste</button>
           <button class="tab-btn" data-tab="spotify">Musik</button>
@@ -231,6 +232,25 @@
               </div>
               <input class="input-small meal-image-input" placeholder="Billede-link (valgfrit)" data-meal="dinner" style="width:100%; margin-top:6px;" />
               <div class="meal-list" id="meal-list-dinner"></div>
+            </div>
+          </section>
+        </div>
+
+        <div id="tab-shopping" class="tab-panel hidden">
+          <section class="card">
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Indkøbsliste</h2>
+              <button id="shopping-uncheck-all-btn" class="link-btn">Ryd afkrydsninger</button>
+            </div>
+            <p class="muted">Genereres automatisk ud fra Mad og Drinks. Afkrydsninger deles mellem jer alle.</p>
+          </section>
+          <div id="shopping-list-sections"></div>
+          <section class="card">
+            <h2 class="h2">Andre indkøb</h2>
+            <p class="muted">Ting der ikke er en del af menuen (fx is, kopper, chips).</p>
+            <div class="inline-form">
+              <input id="shopping-extra-input" class="input" placeholder="Tilføj punkt" />
+              <button id="shopping-extra-add-btn" class="primary-btn">+ Tilføj</button>
             </div>
           </section>
         </div>
