@@ -34,6 +34,7 @@ function emptyData() {
     speedResults: [],
     shoppingExtra: [],
     shoppingChecked: {},
+    aimScores: [],
   };
 }
 
@@ -76,6 +77,7 @@ function normalizeData(raw) {
   if (!next.checklistChecked) next.checklistChecked = {};
   if (!next.drinks) next.drinks = [];
   if (!next.drinkMenu) next.drinkMenu = [];
+  next.drinkMenu = next.drinkMenu.map((d) => ({ ...d, ingredients: d.ingredients || [] }));
   if (!next.games) next.games = [];
   next.games = next.games.map((g) => ({ ...g, votes: g.votes || {} }));
   if (!next.points) next.points = [];
@@ -83,6 +85,7 @@ function normalizeData(raw) {
   if (!next.speedResults) next.speedResults = [];
   if (!next.shoppingExtra) next.shoppingExtra = [];
   if (!next.shoppingChecked) next.shoppingChecked = {};
+  if (!next.aimScores) next.aimScores = [];
   return next;
 }
 
@@ -158,15 +161,34 @@ function formatTime(ts) {
 /* ---------- Tabs ---------- */
 
 function initTabs() {
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('.tab-panel').forEach((p) => {
-        p.classList.toggle('hidden', p.id !== `tab-${activeTab}`);
-      });
+  const groupBtns = document.querySelectorAll('.group-btn');
+  const tabBtns = document.querySelectorAll('.tab-btn');
+
+  function activateTab(btn) {
+    activeTab = btn.dataset.tab;
+    tabBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tab-panel').forEach((p) => {
+      p.classList.toggle('hidden', p.id !== `tab-${activeTab}`);
     });
+  }
+
+  function showGroup(group) {
+    groupBtns.forEach((b) => b.classList.toggle('active', b.dataset.group === group));
+    tabBtns.forEach((b) => {
+      b.classList.toggle('group-hidden', b.dataset.group !== group);
+    });
+    const firstBtn = Array.from(tabBtns).find((b) => b.dataset.group === group);
+    if (firstBtn) activateTab(firstBtn);
+  }
+
+  groupBtns.forEach((btn) => {
+    btn.addEventListener('click', () => showGroup(btn.dataset.group));
   });
+  tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => activateTab(btn));
+  });
+
+  showGroup('planning');
 }
 
 /* ---------- Master render ---------- */
@@ -193,6 +215,7 @@ function render() {
   renderChecklist();
   renderSounds();
   renderSpeedResults();
+  if (typeof renderAimLeaderboard === 'function') renderAimLeaderboard();
   checkNewDrinks();
 }
 
@@ -561,6 +584,26 @@ function renderDrinkMenu() {
       card.appendChild(desc);
     }
 
+    const ingRow = document.createElement('div');
+    ingRow.className = 'drink-ingredients-row';
+    if (d.ingredients && d.ingredients.length) {
+      const ingText = document.createElement('div');
+      ingText.className = 'drink-ingredients-text';
+      ingText.textContent = d.ingredients.join(', ');
+      ingRow.appendChild(ingText);
+    } else {
+      const ingText = document.createElement('div');
+      ingText.className = 'drink-ingredients-text muted';
+      ingText.textContent = 'Ingen ingredienser registreret';
+      ingRow.appendChild(ingText);
+    }
+    const editBtn = document.createElement('button');
+    editBtn.className = 'link-btn';
+    editBtn.textContent = '✎ Rediger';
+    editBtn.onclick = () => editDrinkIngredients(d.id);
+    ingRow.appendChild(editBtn);
+    card.appendChild(ingRow);
+
     const orderBtn = document.createElement('button');
     orderBtn.className = 'done-btn';
     orderBtn.style.marginTop = '8px';
@@ -586,17 +629,35 @@ async function addDrinkMenuItem() {
   const imageInput = $('menu-drink-image');
   const name = nameInput.value.trim();
   if (!name || !myName) return;
+  const recipe = (typeof lookupDrinkRecipe === 'function') ? lookupDrinkRecipe(name) : null;
   const entry = {
     id: uid(),
     name,
     description: descInput.value.trim(),
     imageUrl: imageInput.value.trim(),
     addedBy: myName,
+    ingredients: recipe || [],
   };
   await saveData({ ...data, drinkMenu: [...data.drinkMenu, entry] });
   nameInput.value = '';
   descInput.value = '';
   imageInput.value = '';
+  if (recipe) {
+    showError(null);
+  }
+}
+
+async function editDrinkIngredients(id) {
+  const drink = data.drinkMenu.find((d) => d.id === id);
+  if (!drink) return;
+  const current = (drink.ingredients || []).join(', ');
+  const input = window.prompt('Ingredienser til ' + drink.name + ' (kommasepareret):', current);
+  if (input === null) return;
+  const ingredients = input.split(',').map((s) => s.trim()).filter(Boolean);
+  await saveData({
+    ...data,
+    drinkMenu: data.drinkMenu.map((d) => (d.id === id ? { ...d, ingredients } : d)),
+  });
 }
 
 async function removeDrinkMenuItem(id) {
@@ -858,7 +919,16 @@ function buildShoppingSections() {
     const items = (data.meals[meal] || []).map((i) => ({ key: `meal:${meal}:${i.id}`, name: i.name, imageUrl: i.imageUrl }));
     if (items.length) sections.push({ title: MEAL_LABELS[meal], items });
   });
-  const drinkItems = data.drinkMenu.map((d) => ({ key: `drinkmenu:${d.id}`, name: d.name, imageUrl: d.imageUrl }));
+  const drinkItems = [];
+  data.drinkMenu.forEach((d) => {
+    if (d.ingredients && d.ingredients.length) {
+      d.ingredients.forEach((ing, idx) => {
+        drinkItems.push({ key: `drinkmenu:${d.id}:ing:${idx}`, name: `${ing} (til ${d.name})`, imageUrl: '' });
+      });
+    } else {
+      drinkItems.push({ key: `drinkmenu:${d.id}`, name: d.name, imageUrl: d.imageUrl });
+    }
+  });
   if (drinkItems.length) sections.push({ title: 'Drinks', items: drinkItems });
   const extraItems = data.shoppingExtra.map((e) => ({ key: `extra:${e.id}`, name: e.name, imageUrl: '' }));
   if (extraItems.length) sections.push({ title: 'Andre indkøb', items: extraItems, removable: true });

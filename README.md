@@ -12,14 +12,14 @@ Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build
 
 ## Deploy — via Cloudflare-dashboardet (nemmest)
 
-1. **Læg koden på GitHub.** Opret et nyt repo, og push denne mappe til det.
+1. **Læg koden på GitHub.** Opret et nyt repo, f.eks. `Theischr/lan-planner`, og push denne mappe til det.
    ```bash
    cd lan-planner
    git init
    git add .
    git commit -m "Initial LAN planner"
    git branch -M main
-   git remote add 
+   git remote add origin https://github.com/Theischr/lan-planner.git
    git push -u origin main
    ```
 
@@ -45,7 +45,7 @@ Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build
 
 7. **Redeploy** projektet én gang (Settings-ændringer kræver en ny deployment for at slå igennem — gå til **Deployments** og klik **Retry deployment**, eller push en tom commit).
 
-8. Cloudflare giver jer en URL — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
+8. Cloudflare giver jer en URL som `https://lan-planner.pages.dev` — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
 
 ## Deploy — via Wrangler CLI (alternativ)
 
@@ -91,6 +91,10 @@ Ny fane **Musik** lader jer styre afspilning via Spotify Connect (play/pause/ski
 
 **Vigtigt ved deploy:** sørg for at `spotify-callback.html` også bliver pushet til GitHub-repoet sammen med de andre filer, og at `spotify.js` er inkluderet — ellers virker Musik-fanen ikke.
 
+## Kommer senere
+
+- **Galleri/meme-slideshow**: droppet for nu, kan tages op igen senere.
+
 ## Endnu flere faner (v3)
 
 - **Drinkmenu + hjul**: Under Drinks kan I nu bygge en menu med navn, beskrivelse og billede pr. drink. "🎡 Snurr hjulet" vælger tilfældigt en drink fra menuen og bestiller den automatisk.
@@ -104,3 +108,12 @@ functions/api/speedtest.js
 functions/api/ping.js
 ```
 Sammen med de opdaterede `index.html`, `style.css`, `app.js`, `timer.js`. Tjek som altid under Functions-fanen efter deploy at `/api/speedtest` og `/api/ping` dukker op som routes.
+
+## v4: Grupperet navigation, ingredienser, aim trainer
+
+- **Faner er nu grupperet** i tre kategorier via en ny knaprække øverst: 📋 Planlægning (Kalender, Mad, Indkøb, Tjekliste), 🎉 Fest (Drinks, Spil, Point), 🛠️ Værktøjer (Musik, Lyde, Timer, Speedtest, Aim Trainer). Løser pladsproblemet fra de mange faner.
+- **Automatiske ingredienser til drinkmenuen**: Skriver du et kendt cocktailnavn (fx "Espresso Martini", "Mojito", "Old Fashioned" — se `drink-recipes.js` for hele listen), udfyldes ingredienserne automatisk og lander i Indkøb. Ukendte navne får ingen automatiske ingredienser, men kan redigeres manuelt via "✎ Rediger" på drink-kortet.
+- **Aim Trainer** (under Værktøjer): 20 sekunders klik-målene-så-hurtigt-som-muligt minispil, med et delt highscore-board (bedste antal ramt pr. person, med præcision og reaktionstid).
+- **`.wrap` er udvidet til 900px** (fra 700px) for mere albuerum, plus generelle overflow-sikringer så billeder og lange tekster ikke skubber siden ud i vandret scroll.
+
+**Nye filer at pushe:** `drink-recipes.js`, `aimtrainer.js` — husk dem sammen med de opdaterede `index.html`, `app.js`, `style.css`.

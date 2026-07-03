@@ -68,18 +68,27 @@
           </div>
         </section>
 
+        <nav id="group-bar" class="group-bar">
+          <button class="group-btn active" data-group="planning">📋 Planlægning</button>
+          <button class="group-btn" data-group="party">🎉 Fest</button>
+          <button class="group-btn" data-group="tools">🛠️ Værktøjer</button>
+        </nav>
+
         <nav id="tab-bar" class="tab-bar">
-          <button class="tab-btn active" data-tab="calendar">Kalender</button>
-          <button class="tab-btn" data-tab="drinks">Drinks</button>
-          <button class="tab-btn" data-tab="games">Spil</button>
-          <button class="tab-btn" data-tab="food">Mad</button>
-          <button class="tab-btn" data-tab="shopping">Indkøb</button>
-          <button class="tab-btn" data-tab="points">Point</button>
-          <button class="tab-btn" data-tab="checklist">Tjekliste</button>
-          <button class="tab-btn" data-tab="spotify">Musik</button>
-          <button class="tab-btn" data-tab="sounds">Lyde</button>
-          <button class="tab-btn" data-tab="timer">Timer</button>
-          <button class="tab-btn" data-tab="speedtest">Speedtest</button>
+          <button class="tab-btn active" data-tab="calendar" data-group="planning">Kalender</button>
+          <button class="tab-btn" data-tab="food" data-group="planning">Mad</button>
+          <button class="tab-btn" data-tab="shopping" data-group="planning">Indkøb</button>
+          <button class="tab-btn" data-tab="checklist" data-group="planning">Tjekliste</button>
+
+          <button class="tab-btn" data-tab="drinks" data-group="party">Drinks</button>
+          <button class="tab-btn" data-tab="games" data-group="party">Spil</button>
+          <button class="tab-btn" data-tab="points" data-group="party">Point</button>
+
+          <button class="tab-btn" data-tab="spotify" data-group="tools">Musik</button>
+          <button class="tab-btn" data-tab="sounds" data-group="tools">Lyde</button>
+          <button class="tab-btn" data-tab="timer" data-group="tools">Timer</button>
+          <button class="tab-btn" data-tab="speedtest" data-group="tools">Speedtest</button>
+          <button class="tab-btn" data-tab="aim" data-group="tools">Aim Trainer</button>
         </nav>
 
         <div id="tab-calendar" class="tab-panel">
@@ -187,6 +196,20 @@
           <section class="card">
             <h2 class="h2">Resultater</h2>
             <div id="speedtest-leaderboard" class="leaderboard"></div>
+          </section>
+        </div>
+
+        <div id="tab-aim" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">Aim Trainer 🎯</h2>
+            <p class="muted">20 sekunder — ram så mange mål som muligt så hurtigt som muligt.</p>
+            <button id="aim-start-btn" class="primary-btn">Start</button>
+            <div id="aim-stats" class="muted small" style="margin-top:8px;"></div>
+          </section>
+          <div id="aim-arena" class="aim-arena hidden"></div>
+          <section class="card">
+            <h2 class="h2">Highscores</h2>
+            <div id="aim-leaderboard" class="leaderboard"></div>
           </section>
         </div>
 
@@ -320,7 +343,9 @@
     </div>
   </div>
 
+  <script src="drink-recipes.js"></script>
   <script src="app.js"></script>
+  <script src="aimtrainer.js"></script>
   <script src="spotify.js"></script>
   <script src="timer.js"></script>
 </body>

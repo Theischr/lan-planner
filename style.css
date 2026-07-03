@@ -24,7 +24,9 @@ body {
 .hidden { display: none !important; }
 
 .page { min-height: 100vh; padding: 24px 16px; }
-.wrap { max-width: 740px; margin: 0 auto; }
+.wrap { max-width: 900px; margin: 0 auto; }
+body { overflow-x: hidden; }
+img { max-width: 100%; }
 
 .header {
   display: flex;
@@ -290,6 +292,26 @@ body {
 
 .small { font-size: 11px; }
 
+/* Group nav */
+.group-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.group-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.group-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(76,201,240,0.08); }
+.tab-btn.group-hidden { display: none; }
+
 /* Tabs */
 .tab-bar {
   display: flex;
@@ -412,6 +434,17 @@ body {
 }
 .game-vote-btn.voted { border-color: var(--amber); color: var(--amber); background: rgba(244,169,58,0.1); }
 .game-led-panel { justify-content: center; margin-top: 8px; border-top: none; padding-top: 0; }
+.drink-ingredients-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.drink-ingredients-text { font-size: 10.5px; color: var(--text); word-break: break-word; }
+.drink-ingredients-text.muted { color: var(--muted); font-style: italic; }
 .game-remove {
   position: absolute;
   top: 4px;
@@ -656,7 +689,30 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.aim-arena {
+  position: relative;
+  width: 100%;
+  height: 340px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.aim-target {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--red), #8a1f2c);
+  border: 2px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(241,89,107,0.6);
+  padding: 0;
+}
+.aim-target:active { transform: scale(0.9); }
+
 @media (max-width: 420px) {
   .countdown-timer { font-size: 22px; }
   .timer-display { font-size: 30px; }
+  .aim-arena { height: 260px; }
 }
