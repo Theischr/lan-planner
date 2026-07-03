@@ -394,6 +394,7 @@ img { max-width: 100%; }
   padding: 10px;
   text-align: center;
   position: relative;
+  display:grid;
 }
 .game-icon {
   width: 100%;
