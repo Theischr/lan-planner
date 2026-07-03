@@ -438,13 +438,28 @@ body {
 .meal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .meal-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 12.5px;
+}
+.meal-item-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.meal-item-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  font-size: 13px;
 }
 .meal-item-name { flex: 1; }
 .meal-item-by { font-size: 10.5px; color: var(--muted); margin-right: 6px; }

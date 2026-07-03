@@ -775,30 +775,61 @@ function renderMeals() {
     items.forEach((item) => {
       const row = document.createElement('div');
       row.className = 'meal-item';
-      row.innerHTML = `<span class="meal-item-name">${escapeHtml(item.name)}</span><span class="meal-item-by">${escapeHtml(item.addedBy)}</span>`;
+
+      if (item.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'meal-item-thumb';
+        img.src = item.imageUrl;
+        img.alt = item.name;
+        img.onerror = () => { img.replaceWith(mealFallbackThumb()); };
+        row.appendChild(img);
+      } else {
+        row.appendChild(mealFallbackThumb());
+      }
+
+      const name = document.createElement('span');
+      name.className = 'meal-item-name';
+      name.textContent = item.name;
+      row.appendChild(name);
+
+      const by = document.createElement('span');
+      by.className = 'meal-item-by';
+      by.textContent = item.addedBy;
+      row.appendChild(by);
+
       const removeBtn = document.createElement('button');
       removeBtn.className = 'meal-remove';
       removeBtn.textContent = '✕';
       removeBtn.onclick = () => removeMealItem(meal, item.id);
       row.appendChild(removeBtn);
+
       container.appendChild(row);
     });
   });
 }
 
+function mealFallbackThumb() {
+  const div = document.createElement('div');
+  div.className = 'meal-item-thumb meal-item-thumb-fallback';
+  div.textContent = '🍽️';
+  return div;
+}
+
 async function addMealItem(meal) {
   try {
     const input = document.querySelector(`.meal-input[data-meal="${meal}"]`);
+    const imageInput = document.querySelector(`.meal-image-input[data-meal="${meal}"]`);
     if (!input) {
       showError(`Kunne ikke finde inputfeltet for ${meal}. Prøv at genindlæse siden.`);
       return;
     }
     const name = input.value.trim();
     if (!name || !myName) return;
-    const entry = { id: uid(), name, addedBy: myName };
+    const entry = { id: uid(), name, addedBy: myName, imageUrl: imageInput ? imageInput.value.trim() : '' };
     const nextMeals = { ...data.meals, [meal]: [...(data.meals[meal] || []), entry] };
     await saveData({ ...data, meals: nextMeals });
     input.value = '';
+    if (imageInput) imageInput.value = '';
   } catch (err) {
     console.error('addMealItem failed', err);
     showError('Der gik noget galt da du tilføjede punktet. Prøv igen.');
