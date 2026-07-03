@@ -773,44 +773,46 @@ function renderMeals() {
       return;
     }
     items.forEach((item) => {
-      const row = document.createElement('div');
-      row.className = 'meal-item';
+      const card = document.createElement('div');
+      card.className = 'meal-card';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'game-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.onclick = () => removeMealItem(meal, item.id);
+      card.appendChild(removeBtn);
 
       if (item.imageUrl) {
         const img = document.createElement('img');
-        img.className = 'meal-item-thumb';
+        img.className = 'meal-card-image';
         img.src = item.imageUrl;
         img.alt = item.name;
         img.onerror = () => { img.replaceWith(mealFallbackThumb()); };
-        row.appendChild(img);
+        card.appendChild(img);
       } else {
-        row.appendChild(mealFallbackThumb());
+        card.appendChild(mealFallbackThumb());
       }
 
-      const name = document.createElement('span');
-      name.className = 'meal-item-name';
+      const body = document.createElement('div');
+      body.className = 'meal-card-body';
+      const name = document.createElement('div');
+      name.className = 'meal-card-name';
       name.textContent = item.name;
-      row.appendChild(name);
+      body.appendChild(name);
+      const by = document.createElement('div');
+      by.className = 'meal-card-by';
+      by.textContent = `tilføjet af ${item.addedBy}`;
+      body.appendChild(by);
+      card.appendChild(body);
 
-      const by = document.createElement('span');
-      by.className = 'meal-item-by';
-      by.textContent = item.addedBy;
-      row.appendChild(by);
-
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'meal-remove';
-      removeBtn.textContent = '✕';
-      removeBtn.onclick = () => removeMealItem(meal, item.id);
-      row.appendChild(removeBtn);
-
-      container.appendChild(row);
+      container.appendChild(card);
     });
   });
 }
 
 function mealFallbackThumb() {
   const div = document.createElement('div');
-  div.className = 'meal-item-thumb meal-item-thumb-fallback';
+  div.className = 'meal-card-image meal-card-image-fallback';
   div.textContent = '🍽️';
   return div;
 }

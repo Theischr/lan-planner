@@ -435,35 +435,35 @@ body {
   margin-bottom: 20px;
 }
 .h3 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--cyan); font-family: var(--mono); }
-.meal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.meal-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.meal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.meal-card {
+  position: relative;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-size: 12.5px;
+  border-radius: 12px;
+  overflow: hidden;
 }
-.meal-item-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+.meal-card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
+  display: block;
 }
-.meal-item-thumb-fallback {
+.meal-card-image-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--panel);
-  font-size: 13px;
+  font-size: 40px;
 }
-.meal-item-name { flex: 1; }
-.meal-item-by { font-size: 10.5px; color: var(--muted); margin-right: 6px; }
-.meal-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
+.meal-card-body { padding: 10px; }
+.meal-card-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.meal-card-by { font-size: 10.5px; color: var(--muted); }
 
 /* Points */
 .leaderboard { display: flex; flex-direction: column; gap: 8px; }
