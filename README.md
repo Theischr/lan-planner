@@ -117,3 +117,23 @@ Sammen med de opdaterede `index.html`, `style.css`, `app.js`, `timer.js`. Tjek s
 - **`.wrap` er udvidet til 900px** (fra 700px) for mere albuerum, plus generelle overflow-sikringer så billeder og lange tekster ikke skubber siden ud i vandret scroll.
 
 **Nye filer at pushe:** `drink-recipes.js`, `aimtrainer.js` — husk dem sammen med de opdaterede `index.html`, `app.js`, `style.css`.
+
+## v5: Installerbar app (PWA) på Android (og iPhone)
+
+Siden er nu en "Progressive Web App" — det betyder Android (og iOS) kan installere den som en rigtig app-genvej med eget ikon, uden at gå gennem Play Store.
+
+**Sådan installerer man den (Android/Chrome):**
+1. Åbn `https://lan-plan.pages.dev` i Chrome på telefonen.
+2. Tryk på de tre prikker øverst til højre → **"Føj til startskærm"** / **"Installer app"**.
+3. Den lander nu som et almindeligt app-ikon, åbner i fuldskærm uden browser-bjælke.
+
+**Sådan virker det teknisk:**
+- `manifest.json` beskriver appens navn, ikoner og farver (mørkt tema, matcher siden).
+- `icons/` indeholder de genererede app-ikoner (192px, 512px, samt en "maskable" variant til Androids adaptive ikoner).
+- `sw.js` er en service worker der cacher app-filerne netværk-først (opdateringer slår igennem med det samme, men appen virker stadig delvist offline hvis wifi'en driller til LAN'et). Den rører **aldrig** `/api/`-kald, så data er altid friske.
+
+**Nye filer at pushe:** `manifest.json`, `sw.js`, og hele `icons/`-mappen (`icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`).
+
+**Vil du have en rigtig .apk / Play Store-app i stedet?** Det kræver et ekstra lag oven på det her:
+- Nemmeste vej: [PWABuilder.com](https://www.pwabuilder.com) — indsæt jeres URL, og det genererer en installerbar `.apk` baseret på `manifest.json`, som I kan side-loade uden Play Store.
+- For en rigtig Play Store-udgivelse: samme værktøj kan pakke det som en "Trusted Web Activity", men det kræver en Google Play-udviklerkonto (engangsgebyr på $25) og en `assetlinks.json`-fil på domænet der beviser I ejer siden. Sig til hvis det er noget I vil forfølge — det er en overkommelig proces, men adskilt fra selve webappen.

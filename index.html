@@ -2,8 +2,15 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>LAN_PLANNER</title>
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0B0F14" />
+<link rel="icon" href="/icons/icon-192.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="LAN_PLANNER" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
@@ -70,7 +77,7 @@
 
         <nav id="group-bar" class="group-bar">
           <button class="group-btn active" data-group="planning">📋 Planlægning</button>
-          <button class="group-btn" data-group="party">🔥 Hammer</button>
+          <button class="group-btn" data-group="party">🎉 Fest</button>
           <button class="group-btn" data-group="tools">🛠️ Værktøjer</button>
         </nav>
 
@@ -118,7 +125,7 @@
           <section class="card">
             <div class="section-header-row">
               <h2 class="h2" style="margin:0;">Drinkmenu</h2>
-              <button id="spin-wheel-btn" class="agree-btn">🎡 Tilfældig Heldig</button>
+              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
             </div>
             <div id="wheel-result" class="wheel-result hidden"></div>
             <div id="drink-menu-list" class="game-grid"></div>
@@ -346,6 +353,13 @@
   <script src="drink-recipes.js"></script>
   <script src="app.js"></script>
   <script src="aimtrainer.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
   <script src="spotify.js"></script>
   <script src="timer.js"></script>
 </body>
