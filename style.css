@@ -394,7 +394,6 @@ img { max-width: 100%; }
   padding: 10px;
   text-align: center;
   position: relative;
-  display:grid;
 }
 .game-icon {
   width: 100%;
@@ -435,6 +434,65 @@ img { max-width: 100%; }
 }
 .game-vote-btn.voted { border-color: var(--amber); color: var(--amber); background: rgba(244,169,58,0.1); }
 .game-led-panel { justify-content: center; margin-top: 8px; border-top: none; padding-top: 0; }
+
+/* Game categories + drag and drop */
+.game-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.game-column {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  min-height: 140px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.game-column.drag-over {
+  border-color: var(--cyan);
+  background: rgba(76,201,240,0.06);
+}
+.game-column-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  min-height: 60px;
+}
+.game-column-empty {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 16px 0;
+  font-size: 12px;
+}
+.game-drag-handle {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(11,15,20,0.8);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.game-card.dragging-source { opacity: 0.35; }
+.game-drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.9;
+  transform: rotate(-2deg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
 .drink-ingredients-row {
   margin-top: 6px;
   padding-top: 6px;
@@ -711,6 +769,23 @@ img { max-width: 100%; }
   padding: 0;
 }
 .aim-target:active { transform: scale(0.9); }
+
+/* Arena shooter */
+.arena-controls-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.arena-wrap {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  line-height: 0;
+}
+#arena-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
 
 @media (max-width: 420px) {
   .countdown-timer { font-size: 22px; }

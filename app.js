@@ -79,7 +79,7 @@ function normalizeData(raw) {
   if (!next.drinkMenu) next.drinkMenu = [];
   next.drinkMenu = next.drinkMenu.map((d) => ({ ...d, ingredients: d.ingredients || [] }));
   if (!next.games) next.games = [];
-  next.games = next.games.map((g) => ({ ...g, votes: g.votes || {} }));
+  next.games = next.games.map((g) => ({ ...g, votes: g.votes || {}, category: g.category || 'unsorted' }));
   if (!next.points) next.points = [];
   if (!next.sounds) next.sounds = [];
   if (!next.speedResults) next.speedResults = [];
@@ -712,79 +712,178 @@ function spinWheel() {
 
 /* ---------- Games ---------- */
 
+const GAME_CATEGORIES = ['unsorted', 'free', 'paid'];
+
 function renderGames() {
-  const grid = $('games-list');
-  grid.innerHTML = '';
+  const containers = {
+    unsorted: $('games-list-unsorted'),
+    free: $('games-list-free'),
+    paid: $('games-list-paid'),
+  };
+
+  Object.values(containers).forEach((el) => { if (el) el.innerHTML = ''; });
 
   if (data.games.length === 0) {
-    grid.innerHTML = '<div class="empty">Ingen spilforslag endnu.</div>';
+    if (containers.unsorted) containers.unsorted.innerHTML = '<div class="empty">Ingen spilforslag endnu.</div>';
     return;
   }
 
   const withCounts = data.games.map((g) => ({ g, count: Object.keys(g.votes || {}).length }));
   const maxCount = Math.max(0, ...withCounts.map((x) => x.count));
-  const sorted = [...withCounts].sort((a, b) => b.count - a.count);
 
-  sorted.forEach(({ g, count }) => {
-    const isTop = count > 0 && count === maxCount;
-    const card = document.createElement('div');
-    card.className = 'game-card' + (isTop ? ' game-card-top' : '');
+  GAME_CATEGORIES.forEach((cat) => {
+    const container = containers[cat];
+    if (!container) return;
+    const items = withCounts
+      .filter((x) => (x.g.category || 'unsorted') === cat)
+      .sort((a, b) => b.count - a.count);
 
-    const remove = document.createElement('button');
-    remove.className = 'game-remove';
-    remove.textContent = '✕';
-    remove.onclick = () => removeGame(g.id);
-    card.appendChild(remove);
-
-    if (g.iconUrl) {
-      const img = document.createElement('img');
-      img.className = 'game-icon';
-      img.src = g.iconUrl;
-      img.alt = g.name;
-      img.onerror = () => { img.replaceWith(fallbackIcon()); };
-      card.appendChild(img);
-    } else {
-      card.appendChild(fallbackIcon());
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty game-column-empty">Træk spil herhen</div>';
+      return;
     }
-
-    const name = document.createElement('div');
-    name.className = 'game-name';
-    name.textContent = g.name;
-    card.appendChild(name);
-
-    if (isTop) {
-      const tag = document.createElement('div');
-      tag.className = 'date-tag best';
-      tag.textContent = 'Mest stemt';
-      card.appendChild(tag);
-    }
-
-    const meta = document.createElement('div');
-    meta.className = 'game-meta';
-    meta.textContent = `tilføjet af ${g.addedBy}`;
-    card.appendChild(meta);
-
-    const myVoted = Boolean((g.votes || {})[myName]);
-    const voteBtn = document.createElement('button');
-    voteBtn.className = 'game-vote-btn' + (myVoted ? ' voted' : '');
-    voteBtn.textContent = `${myVoted ? '★' : '☆'} ${count}`;
-    voteBtn.onclick = () => toggleGameVote(g.id);
-    card.appendChild(voteBtn);
-
-    const ledPanel = document.createElement('div');
-    ledPanel.className = 'led-panel game-led-panel';
-    data.people.forEach((p) => {
-      const voted = Boolean((g.votes || {})[p]);
-      const item = document.createElement('div');
-      item.className = 'led-item';
-      item.title = `${p}: ${voted ? 'Stemt' : 'Ikke stemt'}`;
-      item.innerHTML = `<span class="led" style="background:${voted ? 'var(--green)' : 'var(--border)'}"></span><span class="led-label">${p}</span>`;
-      ledPanel.appendChild(item);
+    items.forEach(({ g, count }) => {
+      const isTop = count > 0 && count === maxCount;
+      container.appendChild(buildGameCard(g, count, isTop));
     });
-    card.appendChild(ledPanel);
-
-    grid.appendChild(card);
   });
+}
+
+function buildGameCard(g, count, isTop) {
+  const card = document.createElement('div');
+  card.className = 'game-card' + (isTop ? ' game-card-top' : '');
+  card.dataset.gameId = g.id;
+
+  const handle = document.createElement('div');
+  handle.className = 'game-drag-handle';
+  handle.textContent = '⠿';
+  handle.title = 'Træk for at flytte';
+  handle.addEventListener('pointerdown', (e) => startGameDrag(e, g.id));
+  card.appendChild(handle);
+
+  const remove = document.createElement('button');
+  remove.className = 'game-remove';
+  remove.textContent = '✕';
+  remove.onclick = () => removeGame(g.id);
+  card.appendChild(remove);
+
+  if (g.iconUrl) {
+    const img = document.createElement('img');
+    img.className = 'game-icon';
+    img.src = g.iconUrl;
+    img.alt = g.name;
+    img.onerror = () => { img.replaceWith(fallbackIcon()); };
+    card.appendChild(img);
+  } else {
+    card.appendChild(fallbackIcon());
+  }
+
+  const name = document.createElement('div');
+  name.className = 'game-name';
+  name.textContent = g.name;
+  card.appendChild(name);
+
+  if (isTop) {
+    const tag = document.createElement('div');
+    tag.className = 'date-tag best';
+    tag.textContent = 'Mest stemt';
+    card.appendChild(tag);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'game-meta';
+  meta.textContent = `tilføjet af ${g.addedBy}`;
+  card.appendChild(meta);
+
+  const myVoted = Boolean((g.votes || {})[myName]);
+  const voteBtn = document.createElement('button');
+  voteBtn.className = 'game-vote-btn' + (myVoted ? ' voted' : '');
+  voteBtn.textContent = `${myVoted ? '★' : '☆'} ${count}`;
+  voteBtn.onclick = () => toggleGameVote(g.id);
+  card.appendChild(voteBtn);
+
+  const ledPanel = document.createElement('div');
+  ledPanel.className = 'led-panel game-led-panel';
+  data.people.forEach((p) => {
+    const voted = Boolean((g.votes || {})[p]);
+    const item = document.createElement('div');
+    item.className = 'led-item';
+    item.title = `${p}: ${voted ? 'Stemt' : 'Ikke stemt'}`;
+    item.innerHTML = `<span class="led" style="background:${voted ? 'var(--green)' : 'var(--border)'}"></span><span class="led-label">${p}</span>`;
+    ledPanel.appendChild(item);
+  });
+  card.appendChild(ledPanel);
+
+  return card;
+}
+
+/* ---------- Games drag-and-drop (pointer events: works with mouse + touch) ---------- */
+
+let gameDragState = null;
+
+function startGameDrag(e, gameId) {
+  e.preventDefault();
+  const card = e.currentTarget.closest('.game-card');
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('game-drag-ghost');
+  ghost.style.width = `${rect.width}px`;
+  ghost.style.left = `${rect.left}px`;
+  ghost.style.top = `${rect.top}px`;
+  document.body.appendChild(ghost);
+  card.classList.add('dragging-source');
+
+  gameDragState = {
+    gameId,
+    ghost,
+    sourceCard: card,
+    offsetX: e.clientX - rect.left,
+    offsetY: e.clientY - rect.top,
+  };
+
+  window.addEventListener('pointermove', onGameDragMove);
+  window.addEventListener('pointerup', onGameDragEnd);
+}
+
+function onGameDragMove(e) {
+  if (!gameDragState) return;
+  gameDragState.ghost.style.left = `${e.clientX - gameDragState.offsetX}px`;
+  gameDragState.ghost.style.top = `${e.clientY - gameDragState.offsetY}px`;
+
+  document.querySelectorAll('.game-column').forEach((col) => col.classList.remove('drag-over'));
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const col = under ? under.closest('.game-column') : null;
+  if (col) col.classList.add('drag-over');
+}
+
+async function onGameDragEnd(e) {
+  if (!gameDragState) return;
+  const { gameId, ghost, sourceCard } = gameDragState;
+
+  window.removeEventListener('pointermove', onGameDragMove);
+  window.removeEventListener('pointerup', onGameDragEnd);
+
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const col = under ? under.closest('.game-column') : null;
+
+  ghost.remove();
+  if (sourceCard) sourceCard.classList.remove('dragging-source');
+  document.querySelectorAll('.game-column').forEach((c) => c.classList.remove('drag-over'));
+  gameDragState = null;
+
+  if (col) {
+    await setGameCategory(gameId, col.dataset.category);
+  }
+}
+
+async function setGameCategory(gameId, category) {
+  const next = {
+    ...data,
+    games: data.games.map((g) => (g.id === gameId ? { ...g, category } : g)),
+  };
+  await saveData(next);
 }
 
 async function toggleGameVote(gameId) {
@@ -817,7 +916,7 @@ async function addGame() {
   const iconInput = $('game-icon-input');
   const name = nameInput.value.trim();
   if (!name || !myName) return;
-  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName, votes: {} };
+  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName, votes: {}, category: 'unsorted' };
   await saveData({ ...data, games: [...data.games, entry] });
   nameInput.value = '';
   iconInput.value = '';

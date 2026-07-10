@@ -3,23 +3,25 @@
 Statisk webapp til at stemme om LAN-datoer, tildele lokation og tælle ned til den aftalte dato.
 Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build-step.
 
+> **Før du gør repoet offentligt:** denne README er renset for navne, brugernavne og jeres rigtige domæne. Men hvis I nogensinde har skrevet jeres faktiske `ACCESS_CODE` direkte ind i en committet fil (fx en tidligere version af `wrangler.toml`), ligger den stadig i commit-historikken, selvom I retter filen nu — se afsnittet **"Fjerne tidligere versioner/historik"** nederst for hvordan I renser det, og skift adgangskoden bagefter under Cloudflare → Settings → Environment variables.
+
 ## Sådan hænger det sammen
 
 - `index.html`, `style.css`, `app.js` — selve appen, serveret som statiske filer.
 - `functions/api/data.js` — en Cloudflare Pages Function (kører på Workers-runtime) der læser/skriver de delte data i en KV-namespace.
 - Data (personer, datoer, stemmer, aftalt dato) ligger i én JSON-blob i KV under nøglen `lan-planner-data`.
-- Adgang styres af en simpel adgangskode (miljøvariabel `ACCESS_CODE`).
+- Adgang styres af en simpel adgangskode (miljøvariabel `ACCESS_CODE`), så I tre er de eneste der kan se/ændre data.
 
 ## Deploy — via Cloudflare-dashboardet (nemmest)
 
-1. **Læg koden på GitHub.** Opret et nyt repo, f.eks. `/lan-planner`, og push denne mappe til det.
+1. **Læg koden på GitHub.** Opret et nyt repo, f.eks. `DIT-GITHUB-BRUGERNAVN/lan-planner`, og push denne mappe til det.
    ```bash
    cd lan-planner
    git init
    git add .
    git commit -m "Initial LAN planner"
    git branch -M main
-   git remote add origin https://github.com/***/lan-planner.git
+   git remote add origin https://github.com/DIT-GITHUB-BRUGERNAVN/lan-planner.git
    git push -u origin main
    ```
 
@@ -41,11 +43,11 @@ Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build
 
 6. **Sæt en adgangskode:**
    - Samme sted: **Settings → Environment variables**.
-   - Tilføj `ACCESS_CODE` = jeres valgte kode, for både **Production** og **Preview**.
+   - Tilføj `ACCESS_CODE` = jeres valgte kode (f.eks. `lanhygge2026`), for både **Production** og **Preview**.
 
 7. **Redeploy** projektet én gang (Settings-ændringer kræver en ny deployment for at slå igennem — gå til **Deployments** og klik **Retry deployment**, eller push en tom commit).
 
-8. Cloudflare giver jer en URL — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
+8. Cloudflare giver jer en URL som `https://dit-projekt.pages.dev` — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
 
 ## Deploy — via Wrangler CLI (alternativ)
 
@@ -85,7 +87,7 @@ Ny fane **Musik** lader jer styre afspilning via Spotify Connect (play/pause/ski
 
 **Sådan virker det:**
 - Bruger PKCE-login direkte fra browseren — intet Client Secret involveret, kun det offentlige Client ID.
-- `spotify-callback.html` skal ligge i repo-roden ved siden af `index.html` — det er filen der matcher jeres registrerede redirect-URI `https://lan-plan.pages.dev/spotify-callback` (Cloudflare Pages matcher automatisk extensionless URL'er til den tilsvarende `.html`-fil).
+- `spotify-callback.html` skal ligge i repo-roden ved siden af `index.html` — det er filen der matcher jeres registrerede redirect-URI `https://dit-projekt.pages.dev/spotify-callback` (Cloudflare Pages matcher automatisk extensionless URL'er til den tilsvarende `.html`-fil).
 - Login/tokens gemmes kun lokalt i hver persons egen browser (ikke i den delte KV) — hver af jer logger ind med sin egen Spotify-konto.
 - Kræver Spotify Premium på den konto der skal styre afspilningen, og at Spotify-appen er åben/cast'et til jeres Google-højtaler mindst én gang, så den dukker op i enhedslisten.
 
@@ -123,7 +125,7 @@ Sammen med de opdaterede `index.html`, `style.css`, `app.js`, `timer.js`. Tjek s
 Siden er nu en "Progressive Web App" — det betyder Android (og iOS) kan installere den som en rigtig app-genvej med eget ikon, uden at gå gennem Play Store.
 
 **Sådan installerer man den (Android/Chrome):**
-1. Åbn `https://lan-plan.pages.dev` i Chrome på telefonen.
+1. Åbn `https://dit-projekt.pages.dev` i Chrome på telefonen.
 2. Tryk på de tre prikker øverst til højre → **"Føj til startskærm"** / **"Installer app"**.
 3. Den lander nu som et almindeligt app-ikon, åbner i fuldskærm uden browser-bjælke.
 
@@ -137,3 +139,81 @@ Siden er nu en "Progressive Web App" — det betyder Android (og iOS) kan instal
 **Vil du have en rigtig .apk / Play Store-app i stedet?** Det kræver et ekstra lag oven på det her:
 - Nemmeste vej: [PWABuilder.com](https://www.pwabuilder.com) — indsæt jeres URL, og det genererer en installerbar `.apk` baseret på `manifest.json`, som I kan side-loade uden Play Store.
 - For en rigtig Play Store-udgivelse: samme værktøj kan pakke det som en "Trusted Web Activity", men det kræver en Google Play-udviklerkonto (engangsgebyr på $25) og en `assetlinks.json`-fil på domænet der beviser I ejer siden. Sig til hvis det er noget I vil forfølge — det er en overkommelig proces, men adskilt fra selve webappen.
+
+## v6: Arena — lille realtids multiplayer-shooter
+
+**Vigtigt om ophavsret:** dette er et originalt, generisk arena-shooter-spil (bevæg dig, sigt, skyd), ikke en kopi af Counter-Strike — intet navn, ingen assets eller lyde derfra er brugt.
+
+### Hvorfor det er en anden slags deploy end alt det forrige
+
+Realtids-multiplayer kræver en vedvarende forbindelse (WebSocket), hvilket jeres nuværende opsætning (KV + polling hvert 15. sek) ikke understøtter. Det kræver **Cloudflare Durable Objects**, og Cloudflare tillader ikke Durable Objects i selve Pages-projektet — de skal ligge i en **separat Worker**. Derfor er der en helt ny mappe: `game-server/`, som er et selvstændigt projekt der skal deployes for sig, ved siden af (ikke i stedet for) jeres eksisterende Pages-deploy.
+
+### Deploy game-server/ (kør i din Codespace)
+
+1. Åbn `game-server/wrangler.toml` og ret `ACCESS_CODE` til **samme kode** som I bruger på selve LAN_PLANNER-siden.
+2. I terminalen:
+   ```bash
+   cd game-server
+   npx wrangler login    # hvis ikke allerede logget ind
+   npx wrangler deploy
+   ```
+3. Wrangler udskriver en URL i stil med:
+   ```
+   https://lan-arena-game.dit-brugernavn.workers.dev
+   ```
+   Notér den — I skal bruge WebSocket-varianten af den (se næste trin).
+
+### Kobl siden til game-serveren
+
+1. Åbn `game-arena.js` i hovedprojektet.
+2. Øverst, ret:
+   ```js
+   const ARENA_SERVER_URL = 'wss://lan-arena-game.YOUR-SUBDOMAIN.workers.dev/room';
+   ```
+   til jeres rigtige URL (bemærk `wss://` i stedet for `https://`, og `/room` til sidst).
+3. Push `game-arena.js`, det opdaterede `index.html` og `style.css` til jeres GitHub-repo som normalt — Cloudflare Pages redeployer automatisk.
+
+### Sådan spiller I
+
+- Gå til fanen **Arena** under 🎉 Fest.
+- Tryk **"Deltag i kampen"** — WASD for at bevæge sig, mus for at sigte, klik eller mellemrum for at skyde.
+- Én spiller trykker **"Start runde"** og sætter antal kills der skal til for at vinde.
+- Vinderen tilføjes automatisk til jeres delte **Point**-fane (3 point, spillet navngivet "Arena 🎯").
+
+### Begrænsninger at kende til
+
+- **Ingen persistens**: spillets tilstand nulstilles hvis alle forlader og game-serveren går i dvale — det er tilsigtet, det er kun selve runden der er midlertidig, ikke jeres LAN_PLANNER-data.
+- **Simpelt v1**: ingen vægge/forhindringer, ingen liv/skade (ét hit = kill), samme våben til alle. Sig til hvis I vil bygge videre på det.
+- **To adskilte deploys at huske på** fremover: `lan-planner` (Pages) og `lan-arena-game` (Worker) — de deler ikke automatisk opdateringer, så game-server-ændringer kræver `npx wrangler deploy` fra `game-server/`-mappen, ikke et almindeligt GitHub-push.
+
+## v7: Spil-kategorier med drag-and-drop
+
+Under **Spil** er kortene nu delt i tre kolonner: **🔀 Ikke sorteret** (hvor nye forslag lander), **🆓 Har dem (gratis)** og **💰 Skal købes**. Træk et spilkort (i det lille ⠿-håndtag øverst til venstre) mellem kolonnerne for at sortere det.
+
+Det er bygget med Pointer Events i stedet for native HTML5 drag-and-drop, så det virker lige godt med mus **og** touch — vigtigt, da native HTML5-drag typisk fejler stille på mobil, hvor I sandsynligvis bruger appen mest.
+
+Kategorien gemmes pr. spil i den delte KV-data, så alle ser samme opdeling. Stemmer fungerer uændret inden for hver kolonne.
+
+## Gør repoet offentligt: fjerne tidligere versioner/historik
+
+At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.
+
+**Nemmeste og mest robuste løsning: start historikken forfra.** Til et lille personligt projekt som dette er det klart at foretrække frem for at forsøge at rense enkelte commits:
+
+```bash
+cd lan-planner
+git checkout --orphan clean-main   # ny gren uden nogen historik
+git add -A
+git commit -m "Initial public version"
+git branch -D main                 # slet den gamle gren med historik
+git branch -m main                 # omdøb den nye gren til main
+git push -f origin main            # overskriv historikken på GitHub
+```
+
+Bagefter er der kun én commit tilbage på GitHub — al tidligere historik er væk.
+
+**Vigtigt bagefter:**
+1. **Skift `ACCESS_CODE`** i Cloudflare (Settings → Environment variables, og i `game-server/wrangler.toml` hvis den bruges der) til en ny værdi — også selvom I ikke tror den gamle lækkede, er det billigt at være sikker.
+2. Hvis nogen af jer har **forket eller clonet** repoet lokalt før historik-oprydningen, ligger den gamle historik stadig i den kopi — de skal slette og klone på ny.
+3. GitHub kan i sjældne tilfælde have cachet gamle commits kortvarigt efter en force-push. Har I på noget tidspunkt committet en rigtig hemmelighed (adgangskode, token), er det sikreste stadig at rotere den — historik-oprydning er godt håndværk, men bør ikke stå alene som eneste sikkerhedsforanstaltning.
+4. Alternativt kan I gøre det endnu enklere: **slet repoet på GitHub og opret et helt nyt** med de rensede filer — samme effekt, ingen kommandolinje nødvendig.
