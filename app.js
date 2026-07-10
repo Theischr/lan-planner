@@ -738,6 +738,11 @@ function renderGames() {
       .filter((x) => (x.g.category || 'unsorted') === cat)
       .sort((a, b) => b.count - a.count);
 
+    if (cat === 'unsorted') {
+      const columnEl = container.closest('.game-column');
+      if (columnEl) columnEl.classList.toggle('hidden', items.length === 0);
+    }
+
     if (items.length === 0) {
       container.innerHTML = '<div class="empty game-column-empty">Træk spil herhen</div>';
       return;
