@@ -390,50 +390,53 @@ img { max-width: 100%; }
 .game-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 6px;
   text-align: center;
   position: relative;
 }
 .game-icon {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
   background: var(--bg);
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   border: 1px solid var(--border);
 }
 .game-icon-fallback {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 16px;
   color: var(--muted);
 }
-.game-name { font-size: 12.5px; font-weight: 600; }
-.game-meta { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.game-name { font-size: 11px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-meta { font-size: 9px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .game-card.game-card-top { border-color: var(--green); box-shadow: 0 0 0 1px rgba(62,207,142,0.2); }
 .game-vote-btn {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 5px;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--muted);
-  border-radius: 8px;
-  padding: 6px 0;
-  font-size: 12.5px;
+  border-radius: 6px;
+  padding: 3px 0;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
 .game-vote-btn.voted { border-color: var(--amber); color: var(--amber); background: rgba(244,169,58,0.1); }
-.game-led-panel { justify-content: center; margin-top: 8px; border-top: none; padding-top: 0; }
+.game-led-panel { justify-content: center; margin-top: 5px; border-top: none; padding-top: 0; gap: 6px; flex-wrap: wrap; }
+.game-led-panel .led-item { gap: 3px; }
+.game-led-panel .led-label { font-size: 8.5px; }
+.game-led-panel .led { width: 5px; height: 5px; }
 
 /* Game categories + drag and drop */
 .game-columns {
@@ -455,8 +458,8 @@ img { max-width: 100%; }
 }
 .game-column-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
   margin-top: 10px;
   min-height: 60px;
 }
@@ -469,17 +472,17 @@ img { max-width: 100%; }
 }
 .game-drag-handle {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 22px;
-  height: 20px;
-  border-radius: 6px;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 16px;
+  border-radius: 5px;
   background: rgba(11,15,20,0.8);
   color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10px;
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -506,16 +509,16 @@ img { max-width: 100%; }
 .drink-ingredients-text.muted { color: var(--muted); font-style: italic; }
 .game-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 3px;
+  right: 3px;
   background: rgba(11,15,20,0.8);
   border: none;
   color: var(--muted);
-  border-radius: 6px;
-  width: 20px;
-  height: 20px;
+  border-radius: 5px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 /* Meals */
