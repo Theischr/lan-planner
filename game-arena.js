@@ -1,6 +1,6 @@
 // ⚠️ Opdatér denne URL efter du har deployet game-server/ som en separat Cloudflare Worker.
 // Formatet er typisk: wss://<worker-navn>.<din-subdomæne>.workers.dev/room
-const ARENA_SERVER_URL = 'wss://lan-arena-game.YOUR-SUBDOMAIN.workers.dev/room';
+const ARENA_SERVER_URL = 'wss://lan-arena-game.nuggis123.workers.dev/room';
 
 const PICKUP_LABELS = {
   shotgun: { emoji: '🔫', color: '#F4A93A' },
