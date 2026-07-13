@@ -252,7 +252,8 @@
         <div id="tab-arena" class="tab-panel hidden">
           <section class="card">
             <h2 class="h2">Arena 🎯</h2>
-            <p class="muted">Bevæg dig med WASD, sigt med musen, klik eller mellemrum for at skyde. Første til X kills vinder runden.</p>
+            <p class="muted">WASD for at bevæge dig, mus for at sigte, klik/mellemrum for at skyde, <strong>Ctrl</strong> for at dashe. Første til X kills vinder runden.</p>
+            <p class="muted small">🧱 Gem dig bag kasserne · 🔫 shotgun · 🔥 maskingevær · ⚡ speed boost · 👻 usynlighed · 🛡️ skjold</p>
             <div id="arena-connect">
               <button id="arena-join-btn" class="primary-btn">Deltag i kampen</button>
             </div>
@@ -262,6 +263,7 @@
               <span id="arena-status" class="muted small"></span>
             </div>
           </section>
+          <div id="arena-hud" class="arena-hud hidden"></div>
           <div id="arena-wrap" class="arena-wrap hidden">
             <canvas id="arena-canvas" width="800" height="500"></canvas>
           </div>
