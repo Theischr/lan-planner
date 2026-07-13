@@ -1,6 +1,6 @@
 // ⚠️ Opdatér denne URL efter du har deployet game-server/ som en separat Cloudflare Worker.
 // Formatet er typisk: wss://<worker-navn>.<din-subdomæne>.workers.dev/room
-const ARENA_SERVER_URL = 'wss://lan-arena-game.nuggis123.workers.dev/room';
+const ARENA_SERVER_URL = 'wss://lan-arena-game.YOUR-SUBDOMAIN.workers.dev/room';
 
 const PICKUP_LABELS = {
   shotgun: { emoji: '🔫', color: '#F4A93A' },
@@ -20,6 +20,7 @@ let arenaListenersBound = false;
 let arenaBloodParticles = []; // { x, y, vx, vy, born, life }
 let arenaBloodSplatters = []; // { x, y, r, born, life }
 let arenaTrails = {}; // name -> [{x,y,t}]
+let arenaAvatarImages = {}; // name -> HTMLImageElement (cached, keyed by data URL to detect changes)
 
 function arenaEl(id) {
   return document.getElementById(id);
@@ -209,6 +210,15 @@ function updateArenaTrails() {
 
 /* ---------- Rendering ---------- */
 
+function getArenaAvatarImage(name, url) {
+  const cached = arenaAvatarImages[name];
+  if (cached && cached.src === url) return cached;
+  const img = new Image();
+  img.src = url;
+  arenaAvatarImages[name] = img;
+  return img;
+}
+
 function renderArenaFrame() {
   const canvas = arenaEl('arena-canvas');
   if (canvas && canvas.isConnected && arenaSocket) {
@@ -301,9 +311,27 @@ function renderArenaFrame() {
       ctx.globalAlpha = !p.alive ? 0.2 : hiddenFromOthers ? 0.12 : (p.invisible ? 0.45 : 1);
 
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
-      ctx.fill();
+      const avatarUrl = (typeof data !== 'undefined' && data.avatars) ? data.avatars[p.name] : null;
+      const avatarImg = avatarUrl ? getArenaAvatarImage(p.name, avatarUrl) : null;
+
+      if (avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(avatarImg, p.x - 14, p.y - 14, 28, 28);
+        ctx.restore();
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       if (p.shield > 0) {
         ctx.strokeStyle = '#4CC9F0';

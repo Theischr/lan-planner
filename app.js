@@ -35,6 +35,7 @@ function emptyData() {
     shoppingExtra: [],
     shoppingChecked: {},
     aimScores: [],
+    avatars: {},
   };
 }
 
@@ -86,6 +87,7 @@ function normalizeData(raw) {
   if (!next.shoppingExtra) next.shoppingExtra = [];
   if (!next.shoppingChecked) next.shoppingChecked = {};
   if (!next.aimScores) next.aimScores = [];
+  if (!next.avatars) next.avatars = {};
   return next;
 }
 
@@ -204,6 +206,7 @@ function render() {
   }
 
   $('who-am-i-name').textContent = myName;
+  renderMyAvatarPreview();
   renderCountdown();
   renderDates();
   renderDrinks();
@@ -606,7 +609,6 @@ function renderDrinkMenu() {
 
     const orderBtn = document.createElement('button');
     orderBtn.className = 'done-btn';
-    orderBtn.style.marginTop = '8px';
     orderBtn.style.width = '100%';
     orderBtn.textContent = 'Bestil';
     orderBtn.onclick = () => orderDrinkFromMenu(d);
@@ -1475,6 +1477,66 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+/* ---------- Avatars ---------- */
+
+const MAX_AVATAR_SOURCE_BYTES = 15 * 1024 * 1024; // 15MB raw upload cap before resizing
+const AVATAR_SIZE = 128;
+
+function renderMyAvatarPreview() {
+  const img = $('my-avatar-preview');
+  if (!img || !myName) return;
+  const url = data.avatars ? data.avatars[myName] : null;
+  if (url) {
+    img.src = url;
+    img.classList.remove('hidden');
+  } else {
+    img.classList.add('hidden');
+  }
+}
+
+function resizeImageToDataUrl(file, size = AVATAR_SIZE, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_failed'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image_decode_failed'));
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadMyAvatar(file) {
+  if (!myName || !file) return;
+  if (!file.type.startsWith('image/')) {
+    showError('Vælg en billedfil.');
+    return;
+  }
+  if (file.size > MAX_AVATAR_SOURCE_BYTES) {
+    showError('Billedet er for stort. Prøv et mindre billede.');
+    return;
+  }
+  try {
+    const dataUrl = await resizeImageToDataUrl(file);
+    await saveData({ ...data, avatars: { ...(data.avatars || {}), [myName]: dataUrl } });
+  } catch (e) {
+    console.error('avatar upload failed', e);
+    showError('Kunne ikke behandle billedet. Prøv et andet.');
+  }
+}
+
 /* ---------- Init ---------- */
 
 async function init() {
@@ -1504,6 +1566,11 @@ async function init() {
     if (e.key === 'Enter') chooseName($('name-input').value);
   });
   $('switch-name-btn').onclick = switchName;
+  $('avatar-file-input').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) uploadMyAvatar(file);
+    e.target.value = '';
+  });
   $('add-person-btn').onclick = addPerson;
   $('new-person-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addPerson();

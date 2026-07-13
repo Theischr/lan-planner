@@ -194,6 +194,26 @@ Det er bygget med Pointer Events i stedet for native HTML5 drag-and-drop, så de
 
 Kategorien gemmes pr. spil i den delte KV-data, så alle ser samme opdeling. Stemmer fungerer uændret inden for hver kolonne.
 
+## v8: Arena-opgradering — forhindringer, våben, powerups, dash, blod
+
+Spilserveren (`game-server/src/gameroom.js`) og klienten (`game-arena.js`) er markant udvidet:
+
+- **Forhindringer/kasser** man kan gemme sig bag — blokerer både bevægelse og kugler (kugler bliver absorberet af cover).
+- **Våben-pickups** på banen: 🔫 shotgun (5 kugler i en spredning, langsommere) og 🔥 maskingevær (meget hurtig skudtakt). Standardvåbnet er en almindelig pistol.
+- **Powerups**: ⚡ speed boost, 👻 usynlighed (andre kan næsten ikke se dig — du kan stadig ramme/rammes), 🛡️ skjold (absorberer ét hit i stedet for at dø, kan stakkes op til 2).
+- **Dash på Ctrl** — kort burst af fart i bevægelsesretningen, med ca. 2 sekunders nedkøling, og kort usårlighed mens man dasher (kan bruges til at undvige kugler).
+- **Blod-effekter**: partikeludbrud ved kills plus en falmende blodplet på jorden, rent kosmetisk på klienten.
+- **HUD**: viser dit nuværende våben, aktive powerups og om dash er klar, lige over selve banen.
+
+Stadig bevidst "ét hit = død" (medmindre man har skjold) for at undgå et fuldt liv/skade-system — det holder tingene simple, men med langt mere taktisk dybde end v1.
+
+**Vigtigt:** dette kræver `npx wrangler deploy` fra `game-server/`-mappen igen (samme fremgangsmåde som ved førstegangs-opsætningen) — det er ikke nok at pushe til GitHub, da spilserveren er et separat Worker-projekt. `game-arena.js` skal desuden pushes til hovedrepoet som normalt.
+
+## v9: Spiller-avatarer + layoutfix på drinkmenu
+
+- **Avatar-upload**: 📷-ikonet øverst ved siden af dit navn lader dig uploade et billede af dig selv. Det bliver automatisk beskåret til et kvadrat og komprimeret klient-side (128×128, JPEG) før det gemmes i den delte data, så det ikke fylder unødigt meget — I behøver ikke tænke over billedstørrelsen, en almindelig telefonfoto klarer sig fint. Bruges i øjeblikket i **Arena**, hvor det viser dit billede i stedet for en farvet cirkel.
+- **Bestil-knappen i drinkmenuen** sidder nu altid fast i bunden af kortet, uanset hvor mange linjer ingredienser der er — den "hopper" ikke længere afhængig af tekstmængde.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.

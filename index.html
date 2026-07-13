@@ -66,6 +66,11 @@
       <div id="main-section" class="hidden">
         <section class="top-row">
           <div class="who-am-i">
+            <img id="my-avatar-preview" class="avatar-preview hidden" alt="" />
+            <label class="avatar-upload-btn" title="Upload avatar-billede">
+              📷
+              <input id="avatar-file-input" type="file" accept="image/*" class="hidden" />
+            </label>
             <span>Du er <strong id="who-am-i-name"></strong></span>
             <button id="switch-name-btn" class="link-btn">skift</button>
           </div>
@@ -254,6 +259,7 @@
             <h2 class="h2">Arena 🎯</h2>
             <p class="muted">WASD for at bevæge dig, mus for at sigte, klik/mellemrum for at skyde, <strong>Ctrl</strong> for at dashe. Første til X kills vinder runden.</p>
             <p class="muted small">🧱 Gem dig bag kasserne · 🔫 shotgun · 🔥 maskingevær · ⚡ speed boost · 👻 usynlighed · 🛡️ skjold</p>
+            <p class="muted small">Tip: upload et billede af dig selv via 📷-ikonet øverst, så bruges det som din avatar i banen.</p>
             <div id="arena-connect">
               <button id="arena-join-btn" class="primary-btn">Deltag i kampen</button>
             </div>
