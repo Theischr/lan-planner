@@ -190,7 +190,7 @@ function initTabs() {
     btn.addEventListener('click', () => activateTab(btn));
   });
 
-  showGroup('planning');
+  showGroup('party');
 }
 
 /* ---------- Master render ---------- */

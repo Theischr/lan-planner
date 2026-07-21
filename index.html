@@ -81,18 +81,18 @@
         </section>
 
         <nav id="group-bar" class="group-bar">
-          <button class="group-btn active" data-group="planning">📋 Planlægning</button>
-          <button class="group-btn" data-group="party">🔥 Hammer</button>
+          <button class="group-btn" data-group="planning">📋 Planlægning</button>
+          <button class="group-btn active" data-group="party">🔥 Hammer</button>
           <button class="group-btn" data-group="tools">🛠️ Værktøjer</button>
         </nav>
 
         <nav id="tab-bar" class="tab-bar">
-          <button class="tab-btn active" data-tab="calendar" data-group="planning">Kalender</button>
+          <button class="tab-btn" data-tab="calendar" data-group="planning">Kalender</button>
           <button class="tab-btn" data-tab="food" data-group="planning">Mad</button>
           <button class="tab-btn" data-tab="shopping" data-group="planning">Indkøb</button>
           <button class="tab-btn" data-tab="checklist" data-group="planning">Tjekliste</button>
 
-          <button class="tab-btn" data-tab="drinks" data-group="party">Drinks</button>
+          <button class="tab-btn active" data-tab="drinks" data-group="party">Drinks</button>
           <button class="tab-btn" data-tab="games" data-group="party">Spil</button>
           <button class="tab-btn" data-tab="arena" data-group="party">Arena</button>
           <button class="tab-btn" data-tab="points" data-group="party">Point</button>
@@ -104,7 +104,7 @@
           <button class="tab-btn" data-tab="aim" data-group="tools">Aim Trainer</button>
         </nav>
 
-        <div id="tab-calendar" class="tab-panel">
+        <div id="tab-calendar" class="tab-panel hidden">
           <section class="card">
             <h2 class="h2">Foreslå en dato</h2>
             <div class="inline-form">
@@ -115,7 +115,7 @@
           <section id="dates-list" class="list"></section>
         </div>
 
-        <div id="tab-drinks" class="tab-panel hidden">
+        <div id="tab-drinks" class="tab-panel">
           <section class="card">
             <h2 class="h2">Bestil en drink</h2>
             <p class="muted">Alle med fanen åben får besked med det samme.</p>
