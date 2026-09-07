@@ -80,7 +80,7 @@ function normalizeData(raw) {
   if (!next.drinkMenu) next.drinkMenu = [];
   next.drinkMenu = next.drinkMenu.map((d) => ({ ...d, ingredients: d.ingredients || [] }));
   if (!next.games) next.games = [];
-  next.games = next.games.map((g) => ({ ...g, votes: g.votes || {}, category: g.category || 'unsorted' }));
+  next.games = next.games.map((g) => ({ ...g, votes: g.votes || {}, category: g.category || 'unsorted', done: Boolean(g.done) }));
   if (!next.points) next.points = [];
   if (!next.sounds) next.sounds = [];
   if (!next.speedResults) next.speedResults = [];
@@ -716,9 +716,9 @@ let gameWheelSpinning = false;
 
 function spinGameWheel() {
   if (gameWheelSpinning) return;
-  const cards = Array.from(document.querySelectorAll('#games-list-free .game-card'));
+  const cards = Array.from(document.querySelectorAll('#games-list-free .game-card:not(.game-card-done)'));
   if (cards.length === 0) {
-    showError('Der er ingen spil i "🆓 Har dem (gratis)" endnu — flyt eller tilføj nogen først.');
+    showError('Der er ingen uspillede spil i "🆓 Har dem (gratis)" endnu — flyt/tilføj et, eller marker et "Ikke spillet" igen.');
     return;
   }
   gameWheelSpinning = true;
@@ -728,7 +728,7 @@ function spinGameWheel() {
 
   // Same sort order used when rendering the free column (by vote count desc), so the index matches the DOM.
   const freeGamesSorted = data.games
-    .filter((g) => (g.category || 'unsorted') === 'free')
+    .filter((g) => (g.category || 'unsorted') === 'free' && !g.done)
     .sort((a, b) => Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length);
 
   let step = 0;
@@ -801,7 +801,7 @@ function renderGames() {
 
 function buildGameCard(g, count, isTop) {
   const card = document.createElement('div');
-  card.className = 'game-card' + (isTop ? ' game-card-top' : '');
+  card.className = 'game-card' + (isTop ? ' game-card-top' : '') + (g.done ? ' game-card-done' : '');
   card.dataset.gameId = g.id;
 
   const handle = document.createElement('div');
@@ -839,6 +839,12 @@ function buildGameCard(g, count, isTop) {
     tag.textContent = 'Mest stemt';
     card.appendChild(tag);
   }
+  if (g.done) {
+    const doneTag = document.createElement('div');
+    doneTag.className = 'date-tag done-tag';
+    doneTag.textContent = '✓ Spillet';
+    card.appendChild(doneTag);
+  }
 
   const meta = document.createElement('div');
   meta.className = 'game-meta';
@@ -851,6 +857,13 @@ function buildGameCard(g, count, isTop) {
   voteBtn.textContent = `${myVoted ? '★' : '☆'} ${count}`;
   voteBtn.onclick = () => toggleGameVote(g.id);
   card.appendChild(voteBtn);
+
+  const doneBtn = document.createElement('button');
+  doneBtn.className = 'game-done-btn' + (g.done ? ' is-done' : '');
+  doneBtn.textContent = g.done ? '↺ Ikke spillet' : '✓ Spillet';
+  doneBtn.title = 'Udelukker spillet fra "Snurr hjulet" mens det er markeret';
+  doneBtn.onclick = () => toggleGameDone(g.id);
+  card.appendChild(doneBtn);
 
   const ledPanel = document.createElement('div');
   ledPanel.className = 'led-panel game-led-panel';
@@ -954,6 +967,14 @@ async function toggleGameVote(gameId) {
   await saveData(next);
 }
 
+async function toggleGameDone(gameId) {
+  const next = {
+    ...data,
+    games: data.games.map((g) => (g.id === gameId ? { ...g, done: !g.done } : g)),
+  };
+  await saveData(next);
+}
+
 function fallbackIcon() {
   const div = document.createElement('div');
   div.className = 'game-icon-fallback';
@@ -966,7 +987,7 @@ async function addGame() {
   const iconInput = $('game-icon-input');
   const name = nameInput.value.trim();
   if (!name || !myName) return;
-  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName, votes: {}, category: 'unsorted' };
+  const entry = { id: uid(), name, iconUrl: iconInput.value.trim(), addedBy: myName, votes: {}, category: 'unsorted', done: false };
   await saveData({ ...data, games: [...data.games, entry] });
   nameInput.value = '';
   iconInput.value = '';

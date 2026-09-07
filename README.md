@@ -220,6 +220,15 @@ Ny knap i **Spil**-fanen ("🎡 Snurr hjulet") vælger tilfældigt ét spil — 
 
 Samme visuelle "spinning"-effekt som drink-hjulet — kortene blinker hurtigt og bremser gradvist op, indtil det lander på et. Er "Har dem (gratis)" tom, viser den bare en besked om at tilføje/flytte et spil derhen først.
 
+## v11: Markér spil som "Spillet"
+
+Hvert spilkort har nu en **"✓ Spillet"**-knap. Marker et spil som spillet, og det:
+
+- Bliver visuelt nedtonet (og får en grøn "✓ Spillet"-mærkat) i alle tre kolonner.
+- **Udelukkes automatisk fra "Snurr hjulet"** — hjulet vælger kun blandt uspillede spil i "🆓 Har dem (gratis)".
+
+Tryk knappen igen ("↺ Ikke spillet") for at fortryde og få det tilbage i puljen. Status er delt mellem jer alle, ligesom resten af data.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.
