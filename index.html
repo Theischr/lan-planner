@@ -96,6 +96,8 @@
           <button class="tab-btn" data-tab="games" data-group="party">Spil</button>
           <button class="tab-btn" data-tab="arena" data-group="party">Arena</button>
           <button class="tab-btn" data-tab="points" data-group="party">Point</button>
+          <button class="tab-btn" data-tab="tournament" data-group="party">Turnering</button>
+          <button class="tab-btn" data-tab="badges" data-group="party">Badges</button>
 
           <button class="tab-btn" data-tab="spotify" data-group="tools">Musik</button>
           <button class="tab-btn" data-tab="sounds" data-group="tools">Lyde</button>
@@ -355,6 +357,33 @@
           <section id="points-log" class="list"></section>
         </div>
 
+        <div id="tab-tournament" class="tab-panel hidden">
+          <section id="tournament-setup" class="card">
+            <h2 class="h2">Start en turnering</h2>
+            <div class="inline-form">
+              <input id="tournament-game-input" class="input" placeholder="Hvilket spil? (fx Valorant)" />
+            </div>
+            <div id="tournament-player-picker" class="chip-row" style="margin-top:10px;"></div>
+            <button id="tournament-start-btn" class="primary-btn" style="margin-top:10px;">🏆 Start turnering</button>
+            <p class="muted small" style="margin-top:8px;">Ulige antal spillere klares automatisk med en "bye" (fri runde videre).</p>
+          </section>
+          <section id="tournament-active" class="card hidden">
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;" id="tournament-title">Turnering</h2>
+              <button id="tournament-reset-btn" class="link-btn">Afslut/nulstil</button>
+            </div>
+            <div id="tournament-bracket" class="bracket"></div>
+          </section>
+        </div>
+
+        <div id="tab-badges" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">🏅 Badges</h2>
+            <p class="muted">Optjenes automatisk ud fra jeres aktivitet i appen — ingen manuel registrering nødvendig.</p>
+          </section>
+          <div id="badges-grid" class="badges-grid"></div>
+        </div>
+
         <div id="tab-checklist" class="tab-panel hidden">
           <section class="card">
             <h2 class="h2">Din huskeliste</h2>
@@ -368,6 +397,16 @@
         </div>
 
         <div id="tab-spotify" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">🎶 Musikønsker</h2>
+            <p class="muted">Alle kan foreslå numre her, uanset om I selv er logget ind på Spotify. Den der styrer afspilningen kan sætte dem i Spotify-køen direkte.</p>
+            <div class="inline-form">
+              <input id="music-queue-input" class="input" placeholder='Sang - kunstner (fx "Sandstorm - Darude")' />
+              <button id="music-queue-add-btn" class="primary-btn">+ Foreslå</button>
+            </div>
+            <div id="music-queue-list" class="list" style="margin-top:12px;"></div>
+          </section>
+
           <div id="spotify-login" class="card hidden">
             <h2 class="h2">Forbind til Spotify</h2>
             <p class="muted">Log ind med den Spotify-konto der styrer musikken på jeres højtaler. Kræver Spotify Premium for at kunne styre afspilning eksternt.</p>

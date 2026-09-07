@@ -229,6 +229,16 @@ Hvert spilkort har nu en **"✓ Spillet"**-knap. Marker et spil som spillet, og 
 
 Tryk knappen igen ("↺ Ikke spillet") for at fortryde og få det tilbage i puljen. Status er delt mellem jer alle, ligesom resten af data.
 
+## v12: Turnering, Badges og fælles musikkø
+
+**Ny fane: Turnering** (under 🔥 Hammer). Vælg spil-navn og hvem der deltager, og få en rigtig udslagsbracket — virker fint med 3 spillere via et automatisk "bye" (en spiller går videre uden kamp i runde 1). Klik på en spiller i en kamp for at markere vinderen; næste runde genereres automatisk, og mesteren får 3 point tilføjet i Point-loggen automatisk ved turneringens afslutning.
+
+**Ny fane: Badges** (under 🔥 Hammer). 10 achievements der låses op automatisk ud fra jeres eksisterende aktivitet — ingen manuel registrering. Blandt andet: 🍺 Bartenderen (10+ drinks), 🎯 Skarpskytten (15+ i Aim Trainer), 🔫 Arena-es (5+ Arena-sejre), 🏆 Turneringsmester, 👑 Pointkongen, med flere. Hver person har sit eget sæt badges, gråtonet indtil de er låst op.
+
+**Fælles musikønsker** (i Musik-fanen, øverst — synlig for alle uanset om I selv er logget ind på Spotify). Alle kan foreslå numre som fri tekst ("Sang - kunstner"). Den/de der er logget ind på Spotify får derudover en "▶ Sæt i kø"-knap, som søger efter nummeret og lægger det direkte i Spotify-køen på den aktive enhed.
+
+Alle tre features bruger jeres eksisterende delte KV-data — ingen nye Cloudflare-ressourcer eller opsætning nødvendig, bare push de opdaterede filer.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.

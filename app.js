@@ -36,6 +36,8 @@ function emptyData() {
     shoppingChecked: {},
     aimScores: [],
     avatars: {},
+    tournament: null,
+    musicQueue: [],
   };
 }
 
@@ -88,6 +90,8 @@ function normalizeData(raw) {
   if (!next.shoppingChecked) next.shoppingChecked = {};
   if (!next.aimScores) next.aimScores = [];
   if (!next.avatars) next.avatars = {};
+  if (next.tournament === undefined) next.tournament = null;
+  if (!next.musicQueue) next.musicQueue = [];
   return next;
 }
 
@@ -215,9 +219,12 @@ function render() {
   renderMeals();
   renderShoppingList();
   renderPoints();
+  renderTournament();
+  renderBadges();
   renderChecklist();
   renderSounds();
   renderSpeedResults();
+  renderMusicQueue();
   if (typeof renderAimLeaderboard === 'function') renderAimLeaderboard();
   checkNewDrinks();
 }
@@ -1280,6 +1287,271 @@ async function addPointEntry() {
   amountInput.value = '1';
 }
 
+/* ---------- Tournament bracket ---------- */
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildFirstRound(players) {
+  let size = 1;
+  while (size < players.length) size *= 2;
+  const padded = shuffleArray(players);
+  while (padded.length < size) padded.push(null);
+  const round = [];
+  for (let i = 0; i < padded.length; i += 2) {
+    const p1 = padded[i];
+    const p2 = padded[i + 1];
+    let winner = null;
+    if (p1 === null && p2 !== null) winner = p2;
+    if (p2 === null && p1 !== null) winner = p1;
+    round.push({ id: uid(), p1, p2, winner });
+  }
+  return round;
+}
+
+function buildNextRound(prevRound) {
+  const winners = prevRound.map((m) => m.winner);
+  if (winners.some((w) => !w) || winners.length <= 1) return null;
+  const round = [];
+  for (let i = 0; i < winners.length; i += 2) {
+    round.push({ id: uid(), p1: winners[i], p2: winners[i + 1], winner: null });
+  }
+  return round;
+}
+
+function renderTournamentSetup() {
+  const picker = $('tournament-player-picker');
+  if (!picker) return;
+  picker.innerHTML = data.people.map((p) => `
+    <label class="chip tournament-picker-chip">
+      <input type="checkbox" value="${escapeHtml(p)}" checked />${escapeHtml(p)}
+    </label>`).join('');
+}
+
+function renderTournament() {
+  const setupSection = $('tournament-setup');
+  const activeSection = $('tournament-active');
+  if (!setupSection || !activeSection) return;
+
+  if (!data.tournament) {
+    setupSection.classList.remove('hidden');
+    activeSection.classList.add('hidden');
+    renderTournamentSetup();
+    return;
+  }
+
+  setupSection.classList.add('hidden');
+  activeSection.classList.remove('hidden');
+
+  const t = data.tournament;
+  $('tournament-title').textContent = t.champion
+    ? `🏆 ${t.champion} vandt turneringen: ${t.gameName}!`
+    : `Turnering: ${t.gameName}`;
+
+  const bracket = $('tournament-bracket');
+  bracket.innerHTML = '';
+  t.rounds.forEach((round, ri) => {
+    const col = document.createElement('div');
+    col.className = 'bracket-round';
+
+    const label = document.createElement('div');
+    label.className = 'bracket-round-label';
+    label.textContent = round.length === 1 ? 'Finale' : `Runde ${ri + 1}`;
+    col.appendChild(label);
+
+    round.forEach((m) => {
+      const matchEl = document.createElement('div');
+      matchEl.className = 'bracket-match';
+      [m.p1, m.p2].forEach((p) => {
+        const row = document.createElement('button');
+        const isBye = !p;
+        const isWinner = m.winner && p === m.winner;
+        row.className = 'bracket-player' + (isWinner ? ' winner' : '') + (isBye ? ' bye' : '');
+        row.textContent = isBye ? '— (bye)' : p;
+        row.disabled = isBye || Boolean(m.winner);
+        row.onclick = () => setTournamentMatchWinner(ri, m.id, p);
+        matchEl.appendChild(row);
+      });
+      col.appendChild(matchEl);
+    });
+    bracket.appendChild(col);
+  });
+}
+
+async function startTournament() {
+  const gameInput = $('tournament-game-input');
+  const gameName = gameInput.value.trim() || 'Turnering';
+  const checked = Array.from(document.querySelectorAll('#tournament-player-picker input:checked')).map((el) => el.value);
+  if (checked.length < 2) {
+    showError('Vælg mindst 2 spillere for at starte en turnering.');
+    return;
+  }
+  const round1 = buildFirstRound(checked);
+  const tournament = { gameName, players: checked, rounds: [round1], champion: null };
+  await saveData({ ...data, tournament });
+  gameInput.value = '';
+}
+
+async function setTournamentMatchWinner(roundIndex, matchId, winner) {
+  if (!data.tournament || !winner) return;
+  const rounds = data.tournament.rounds.map((round, ri) => {
+    if (ri !== roundIndex) return round;
+    return round.map((m) => (m.id === matchId ? { ...m, winner } : m));
+  });
+  const tournament = { ...data.tournament, rounds };
+  let nextPoints = data.points;
+
+  const lastRoundIndex = tournament.rounds.length - 1;
+  if (roundIndex === lastRoundIndex) {
+    const lastRound = tournament.rounds[lastRoundIndex];
+    if (lastRound.every((m) => m.winner)) {
+      if (lastRound.length === 1) {
+        tournament.champion = lastRound[0].winner;
+        nextPoints = [...data.points, {
+          id: uid(),
+          game: `Turnering: ${tournament.gameName}`,
+          winner: tournament.champion,
+          points: 3,
+          timestamp: Date.now(),
+        }];
+      } else {
+        const next = buildNextRound(lastRound);
+        if (next) tournament.rounds = [...tournament.rounds, next];
+      }
+    }
+  }
+
+  await saveData({ ...data, tournament, points: nextPoints });
+}
+
+async function resetTournament() {
+  await saveData({ ...data, tournament: null });
+}
+
+/* ---------- Badges / Achievements (computed live, no extra storage) ---------- */
+
+const ACHIEVEMENTS = [
+  { emoji: '🍺', label: 'Bartenderen', desc: 'Bestilt 10+ drinks', check: (d, p) => d.drinks.filter((o) => o.person === p).length >= 10 },
+  { emoji: '🎯', label: 'Skarpskytten', desc: '15+ ramt i Aim Trainer på én runde', check: (d, p) => (d.aimScores || []).some((s) => s.person === p && s.score >= 15) },
+  { emoji: '🔫', label: 'Arena-es', desc: '5+ Arena-sejre', check: (d, p) => (d.points || []).filter((e) => e.game === 'Arena 🎯' && e.winner === p).length >= 5 },
+  { emoji: '🗳️', label: 'Demokraten', desc: 'Stemt på 5+ spil', check: (d, p) => d.games.filter((g) => g.votes && g.votes[p]).length >= 5 },
+  { emoji: '🏆', label: 'Turneringsmester', desc: 'Vundet en turnering', check: (d, p) => (d.points || []).some((e) => e.game && e.game.startsWith('Turnering:') && e.winner === p) },
+  { emoji: '🍹', label: 'Mixologen', desc: 'Tilføjet 3+ drinks til menuen', check: (d, p) => d.drinkMenu.filter((x) => x.addedBy === p).length >= 3 },
+  { emoji: '🍽️', label: 'Chefkokken', desc: 'Tilføjet 5+ madvarer', check: (d, p) => {
+    const all = [...d.meals.snacks, ...d.meals.lunch, ...d.meals.dinner];
+    return all.filter((x) => x.addedBy === p).length >= 5;
+  } },
+  { emoji: '👑', label: 'Pointkongen', desc: 'Flest samlede point i gruppen', check: (d, p) => {
+    const totals = {};
+    d.points.forEach((e) => { totals[e.winner] = (totals[e.winner] || 0) + e.points; });
+    const max = Math.max(0, ...Object.values(totals));
+    return max > 0 && totals[p] === max;
+  } },
+  { emoji: '📅', label: 'Vælgeren', desc: 'Stemt på en dato', check: (d, p) => d.dates.some((dt) => dt.votes && dt.votes[p]) },
+  { emoji: '🎮', label: 'Spilforslag', desc: 'Tilføjet 3+ spilforslag', check: (d, p) => d.games.filter((g) => g.addedBy === p).length >= 3 },
+];
+
+function renderBadges() {
+  const grid = $('badges-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (data.people.length === 0) {
+    grid.innerHTML = '<div class="empty">Ingen deltagere endnu.</div>';
+    return;
+  }
+  data.people.forEach((person) => {
+    const card = document.createElement('div');
+    card.className = 'badge-person-card';
+
+    const heading = document.createElement('div');
+    heading.className = 'badge-person-name';
+    heading.textContent = person;
+    card.appendChild(heading);
+
+    const row = document.createElement('div');
+    row.className = 'badge-row';
+    ACHIEVEMENTS.forEach((a) => {
+      const unlocked = a.check(data, person);
+      const badge = document.createElement('div');
+      badge.className = 'badge' + (unlocked ? ' unlocked' : '');
+      badge.title = `${a.label}: ${a.desc}`;
+      badge.innerHTML = `<span class="badge-emoji">${a.emoji}</span><span class="badge-label">${a.label}</span>`;
+      row.appendChild(badge);
+    });
+    card.appendChild(row);
+    grid.appendChild(card);
+  });
+}
+
+/* ---------- Shared music queue (suggestions, queued to Spotify by whoever is connected) ---------- */
+
+function renderMusicQueue() {
+  const box = $('music-queue-list');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (data.musicQueue.length === 0) {
+    box.innerHTML = '<div class="empty">Ingen forslag endnu.</div>';
+    return;
+  }
+
+  const connected = typeof isSpotifyConnected === 'function' && isSpotifyConnected();
+
+  data.musicQueue.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'drink-card' + (item.queued ? ' done' : '');
+
+    const info = document.createElement('div');
+    info.className = 'drink-info';
+    info.innerHTML = `<span class="drink-item-name">${escapeHtml(item.text)}</span><span class="drink-meta">${escapeHtml(item.addedBy)}</span>`;
+    row.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'drink-actions';
+
+    if (connected && typeof spotifyQueueSuggestion === 'function') {
+      const queueBtn = document.createElement('button');
+      queueBtn.className = 'done-btn' + (item.queued ? ' is-done' : '');
+      queueBtn.textContent = item.queued ? '✓ Sat i kø' : '▶ Sæt i kø';
+      queueBtn.onclick = () => spotifyQueueSuggestion(item);
+      actions.appendChild(queueBtn);
+    }
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'drink-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Fjern forslag';
+    removeBtn.onclick = () => removeMusicQueueItem(item.id);
+    actions.appendChild(removeBtn);
+
+    row.appendChild(actions);
+    box.appendChild(row);
+  });
+}
+
+async function addMusicQueueItem() {
+  const input = $('music-queue-input');
+  const text = input.value.trim();
+  if (!text || !myName) return;
+  const entry = { id: uid(), text, addedBy: myName, queued: false };
+  await saveData({ ...data, musicQueue: [...data.musicQueue, entry] });
+  input.value = '';
+}
+
+async function removeMusicQueueItem(id) {
+  await saveData({ ...data, musicQueue: data.musicQueue.filter((i) => i.id !== id) });
+}
+
+async function markMusicQueueItemQueued(id) {
+  await saveData({ ...data, musicQueue: data.musicQueue.map((i) => (i.id === id ? { ...i, queued: true } : i)) });
+}
+
 /* ---------- Checklist ---------- */
 
 function renderChecklist() {
@@ -1671,6 +1943,14 @@ async function init() {
   });
 
   $('point-add-btn').onclick = addPointEntry;
+
+  $('tournament-start-btn').onclick = startTournament;
+  $('tournament-reset-btn').onclick = resetTournament;
+
+  $('music-queue-add-btn').onclick = addMusicQueueItem;
+  $('music-queue-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addMusicQueueItem();
+  });
 
   $('checklist-add-btn').onclick = addChecklistItem;
   $('checklist-new-input').addEventListener('keydown', (e) => {

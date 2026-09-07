@@ -128,6 +128,8 @@ async function renderSpotifyTab() {
   const loginView = spotifyEl('spotify-login');
   if (!connectedView || !loginView) return;
 
+  if (typeof renderMusicQueue === 'function') renderMusicQueue();
+
   if (!isSpotifyConnected()) {
     loginView.classList.remove('hidden');
     connectedView.classList.add('hidden');
@@ -270,6 +272,23 @@ function startSpotifyPolling() {
 
 function stopSpotifyPolling() {
   if (spotifyPollInterval) clearInterval(spotifyPollInterval);
+}
+
+/* ---------- Shared music queue integration ---------- */
+
+async function spotifyQueueSuggestion(item) {
+  try {
+    const searchRes = await spotifyApi(`/search?q=${encodeURIComponent(item.text)}&type=track&limit=1`);
+    const track = searchRes && searchRes.tracks && searchRes.tracks.items && searchRes.tracks.items[0];
+    if (!track) {
+      if (typeof showError === 'function') showError(`Kunne ikke finde "${item.text}" på Spotify.`);
+      return;
+    }
+    await spotifyApi(`/me/player/queue?uri=${encodeURIComponent(track.uri)}`, { method: 'POST' });
+    if (typeof markMusicQueueItemQueued === 'function') await markMusicQueueItemQueued(item.id);
+  } catch (e) {
+    if (typeof showError === 'function') showError('Kunne ikke sætte nummeret i kø: ' + e.message);
+  }
 }
 
 /* ---------- Init ---------- */
