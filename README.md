@@ -214,6 +214,12 @@ Stadig bevidst "ét hit = død" (medmindre man har skjold) for at undgå et fuld
 - **Avatar-upload**: 📷-ikonet øverst ved siden af dit navn lader dig uploade et billede af dig selv. Det bliver automatisk beskåret til et kvadrat og komprimeret klient-side (128×128, JPEG) før det gemmes i den delte data, så det ikke fylder unødigt meget — I behøver ikke tænke over billedstørrelsen, en almindelig telefonfoto klarer sig fint. Bruges i øjeblikket i **Arena**, hvor det viser dit billede i stedet for en farvet cirkel.
 - **Bestil-knappen i drinkmenuen** sidder nu altid fast i bunden af kortet, uanset hvor mange linjer ingredienser der er — den "hopper" ikke længere afhængig af tekstmængde.
 
+## v10: "Snurr hjulet" til Spil
+
+Ny knap i **Spil**-fanen ("🎡 Snurr hjulet") vælger tilfældigt ét spil — men **kun** blandt dem der ligger i kolonnen "🆓 Har dem (gratis)". Spil i "Ikke sorteret" eller "Skal købes" tælles ikke med, så I ikke risikerer at hjulet foreslår noget I først skal ud og købe.
+
+Samme visuelle "spinning"-effekt som drink-hjulet — kortene blinker hurtigt og bremser gradvist op, indtil det lander på et. Er "Har dem (gratis)" tom, viser den bare en besked om at tilføje/flytte et spil derhen først.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.

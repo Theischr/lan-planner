@@ -720,7 +720,7 @@ img { max-width: 100%; }
   border-radius: 8px;
   margin-bottom: 12px;
 }
-.drink-menu-card.wheel-highlight {
+.game-card.wheel-highlight {
   border-color: var(--cyan);
   box-shadow: 0 0 12px rgba(76,201,240,0.5);
 }

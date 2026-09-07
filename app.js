@@ -712,6 +712,49 @@ function spinWheel() {
   tick();
 }
 
+let gameWheelSpinning = false;
+
+function spinGameWheel() {
+  if (gameWheelSpinning) return;
+  const cards = Array.from(document.querySelectorAll('#games-list-free .game-card'));
+  if (cards.length === 0) {
+    showError('Der er ingen spil i "🆓 Har dem (gratis)" endnu — flyt eller tilføj nogen først.');
+    return;
+  }
+  gameWheelSpinning = true;
+  const winnerIndex = Math.floor(Math.random() * cards.length);
+  const resultBox = $('game-wheel-result');
+  resultBox.classList.add('hidden');
+
+  // Same sort order used when rendering the free column (by vote count desc), so the index matches the DOM.
+  const freeGamesSorted = data.games
+    .filter((g) => (g.category || 'unsorted') === 'free')
+    .sort((a, b) => Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length);
+
+  let step = 0;
+  const totalSteps = 18 + winnerIndex;
+  let delay = 80;
+
+  function tick() {
+    cards.forEach((c) => c.classList.remove('wheel-highlight'));
+    const idx = step % cards.length;
+    cards[idx].classList.add('wheel-highlight');
+    step++;
+    delay += 12;
+
+    if (step < totalSteps) {
+      setTimeout(tick, delay);
+    } else {
+      const winner = freeGamesSorted[winnerIndex];
+      gameWheelSpinning = false;
+      resultBox.textContent = winner ? `🎉 Hjulet valgte: ${winner.name}!` : 'Kunne ikke finde et spil.';
+      resultBox.classList.remove('hidden');
+      setTimeout(() => cards.forEach((c) => c.classList.remove('wheel-highlight')), 1500);
+    }
+  }
+  tick();
+}
+
 /* ---------- Games ---------- */
 
 const GAME_CATEGORIES = ['unsorted', 'free', 'paid'];
@@ -1615,6 +1658,7 @@ async function init() {
 
   $('menu-drink-add-btn').onclick = addDrinkMenuItem;
   $('spin-wheel-btn').onclick = spinWheel;
+  $('spin-game-wheel-btn').onclick = spinGameWheel;
 
   $('sound-add-btn').onclick = addSound;
 
