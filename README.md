@@ -239,6 +239,13 @@ Tryk knappen igen ("↺ Ikke spillet") for at fortryde og få det tilbage i pulj
 
 Alle tre features bruger jeres eksisterende delte KV-data — ingen nye Cloudflare-ressourcer eller opsætning nødvendig, bare push de opdaterede filer.
 
+## v13: Nulstil badges, Aim Trainer og speedtest
+
+- **Nulstil badges** (i Badges-fanen): sætter et "tæl fra nu"-tidspunkt — al aktivitet før nulstillingen tæller ikke længere med i badge-udregningen, men selve jeres data (drinks, point, stemmer osv.) slettes **ikke**. Praktisk hvis nogen (fx udvikleren 👋) har testet appen solo inden resten af gruppen er kommet med.
+- **Nulstil Aim Trainer-highscores** og **Nulstil speedtest-resultater**: disse rydder derimod de faktiske lister fuldstændigt, da de kun bruges til highscore-visning og ikke har anden funktion at bevare.
+
+Alle tre kræver bekræftelse (en "er du sikker?"-dialog) inden de udfører sig, da det er en delt handling der påvirker alles visning.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.

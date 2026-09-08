@@ -130,6 +130,12 @@ async function endAimGame() {
   }
 }
 
+async function resetAimScores() {
+  if (typeof window.confirm !== 'function' || !window.confirm('Nulstil alle Aim Trainer-highscores for gruppen?')) return;
+  if (typeof data === 'undefined' || typeof saveData !== 'function') return;
+  await saveData({ ...data, aimScores: [] });
+}
+
 function renderAimLeaderboard() {
   const box = aimEl('aim-leaderboard');
   if (!box || typeof data === 'undefined') return;
@@ -168,7 +174,9 @@ function renderAimLeaderboard() {
 
 function initAimTrainer() {
   const startBtn = document.getElementById('aim-start-btn');
+  const resetBtn = document.getElementById('aim-reset-btn');
   if (startBtn) startBtn.onclick = startAimGame;
+  if (resetBtn) resetBtn.onclick = resetAimScores;
   renderAimLeaderboard();
 }
 

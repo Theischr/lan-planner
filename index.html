@@ -209,7 +209,10 @@
             <div id="speedtest-status" class="muted small" style="margin-top:8px;"></div>
           </section>
           <section class="card">
-            <h2 class="h2">Resultater</h2>
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Resultater</h2>
+              <button id="speedtest-reset-btn" class="link-btn">Nulstil</button>
+            </div>
             <div id="speedtest-leaderboard" class="leaderboard"></div>
           </section>
         </div>
@@ -223,7 +226,10 @@
           </section>
           <div id="aim-arena" class="aim-arena hidden"></div>
           <section class="card">
-            <h2 class="h2">Highscores</h2>
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Highscores</h2>
+              <button id="aim-reset-btn" class="link-btn">Nulstil</button>
+            </div>
             <div id="aim-leaderboard" class="leaderboard"></div>
           </section>
         </div>
@@ -378,8 +384,12 @@
 
         <div id="tab-badges" class="tab-panel hidden">
           <section class="card">
-            <h2 class="h2">🏅 Badges</h2>
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">🏅 Badges</h2>
+              <button id="badges-reset-btn" class="link-btn">Nulstil badges</button>
+            </div>
             <p class="muted">Optjenes automatisk ud fra jeres aktivitet i appen — ingen manuel registrering nødvendig.</p>
+            <p id="badges-reset-note" class="muted small"></p>
           </section>
           <div id="badges-grid" class="badges-grid"></div>
         </div>

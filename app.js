@@ -38,6 +38,7 @@ function emptyData() {
     avatars: {},
     tournament: null,
     musicQueue: [],
+    badgesResetAt: 0,
   };
 }
 
@@ -92,6 +93,7 @@ function normalizeData(raw) {
   if (!next.avatars) next.avatars = {};
   if (next.tournament === undefined) next.tournament = null;
   if (!next.musicQueue) next.musicQueue = [];
+  if (!next.badgesResetAt) next.badgesResetAt = 0;
   return next;
 }
 
@@ -1434,33 +1436,54 @@ async function resetTournament() {
   await saveData({ ...data, tournament: null });
 }
 
-/* ---------- Badges / Achievements (computed live, no extra storage) ---------- */
+/* ---------- Badges / Achievements (computed live from data, filtered by badgesResetAt) ---------- */
+
+// Our uid() format is `${Date.now()}-${random}`, so we can recover a creation
+// timestamp for records that don't carry an explicit `timestamp` field.
+function idTimestamp(id) {
+  if (!id) return 0;
+  const t = parseInt(String(id).split('-')[0], 10);
+  return Number.isFinite(t) ? t : 0;
+}
 
 const ACHIEVEMENTS = [
-  { emoji: '🍺', label: 'Bartenderen', desc: 'Bestilt 10+ drinks', check: (d, p) => d.drinks.filter((o) => o.person === p).length >= 10 },
-  { emoji: '🎯', label: 'Skarpskytten', desc: '15+ ramt i Aim Trainer på én runde', check: (d, p) => (d.aimScores || []).some((s) => s.person === p && s.score >= 15) },
-  { emoji: '🔫', label: 'Arena-es', desc: '5+ Arena-sejre', check: (d, p) => (d.points || []).filter((e) => e.game === 'Arena 🎯' && e.winner === p).length >= 5 },
-  { emoji: '🗳️', label: 'Demokraten', desc: 'Stemt på 5+ spil', check: (d, p) => d.games.filter((g) => g.votes && g.votes[p]).length >= 5 },
-  { emoji: '🏆', label: 'Turneringsmester', desc: 'Vundet en turnering', check: (d, p) => (d.points || []).some((e) => e.game && e.game.startsWith('Turnering:') && e.winner === p) },
-  { emoji: '🍹', label: 'Mixologen', desc: 'Tilføjet 3+ drinks til menuen', check: (d, p) => d.drinkMenu.filter((x) => x.addedBy === p).length >= 3 },
+  { emoji: '🍺', label: 'Bartenderen', desc: 'Bestilt 10+ drinks', check: (d, p) => d.drinks.filter((o) => o.person === p && o.timestamp >= (d.badgesResetAt || 0)).length >= 10 },
+  { emoji: '🎯', label: 'Skarpskytten', desc: '15+ ramt i Aim Trainer på én runde', check: (d, p) => (d.aimScores || []).some((s) => s.person === p && s.score >= 15 && s.timestamp >= (d.badgesResetAt || 0)) },
+  { emoji: '🔫', label: 'Arena-es', desc: '5+ Arena-sejre', check: (d, p) => (d.points || []).filter((e) => e.game === 'Arena 🎯' && e.winner === p && e.timestamp >= (d.badgesResetAt || 0)).length >= 5 },
+  { emoji: '🗳️', label: 'Demokraten', desc: 'Stemt på 5+ spil', check: (d, p) => d.games.filter((g) => g.votes && g.votes[p] && idTimestamp(g.id) >= (d.badgesResetAt || 0)).length >= 5 },
+  { emoji: '🏆', label: 'Turneringsmester', desc: 'Vundet en turnering', check: (d, p) => (d.points || []).some((e) => e.game && e.game.startsWith('Turnering:') && e.winner === p && e.timestamp >= (d.badgesResetAt || 0)) },
+  { emoji: '🍹', label: 'Mixologen', desc: 'Tilføjet 3+ drinks til menuen', check: (d, p) => d.drinkMenu.filter((x) => x.addedBy === p && idTimestamp(x.id) >= (d.badgesResetAt || 0)).length >= 3 },
   { emoji: '🍽️', label: 'Chefkokken', desc: 'Tilføjet 5+ madvarer', check: (d, p) => {
     const all = [...d.meals.snacks, ...d.meals.lunch, ...d.meals.dinner];
-    return all.filter((x) => x.addedBy === p).length >= 5;
+    return all.filter((x) => x.addedBy === p && idTimestamp(x.id) >= (d.badgesResetAt || 0)).length >= 5;
   } },
   { emoji: '👑', label: 'Pointkongen', desc: 'Flest samlede point i gruppen', check: (d, p) => {
     const totals = {};
-    d.points.forEach((e) => { totals[e.winner] = (totals[e.winner] || 0) + e.points; });
+    d.points.filter((e) => e.timestamp >= (d.badgesResetAt || 0)).forEach((e) => { totals[e.winner] = (totals[e.winner] || 0) + e.points; });
     const max = Math.max(0, ...Object.values(totals));
     return max > 0 && totals[p] === max;
   } },
-  { emoji: '📅', label: 'Vælgeren', desc: 'Stemt på en dato', check: (d, p) => d.dates.some((dt) => dt.votes && dt.votes[p]) },
-  { emoji: '🎮', label: 'Spilforslag', desc: 'Tilføjet 3+ spilforslag', check: (d, p) => d.games.filter((g) => g.addedBy === p).length >= 3 },
+  { emoji: '📅', label: 'Vælgeren', desc: 'Stemt på en dato', check: (d, p) => d.dates.some((dt) => dt.votes && dt.votes[p] && idTimestamp(dt.id) >= (d.badgesResetAt || 0)) },
+  { emoji: '🎮', label: 'Spilforslag', desc: 'Tilføjet 3+ spilforslag', check: (d, p) => d.games.filter((g) => g.addedBy === p && idTimestamp(g.id) >= (d.badgesResetAt || 0)).length >= 3 },
 ];
+
+async function resetBadges() {
+  if (!window.confirm('Nulstil badges for alle? Aktivitet fra før nu tæller ikke længere med — men selve data (drinks, point, stemmer osv.) slettes ikke.')) return;
+  await saveData({ ...data, badgesResetAt: Date.now() });
+}
 
 function renderBadges() {
   const grid = $('badges-grid');
   if (!grid) return;
   grid.innerHTML = '';
+
+  const resetNote = $('badges-reset-note');
+  if (resetNote) {
+    resetNote.textContent = data.badgesResetAt
+      ? `Nulstillet ${new Date(data.badgesResetAt).toLocaleString('da-DK')} — kun aktivitet siden da tæller med.`
+      : '';
+  }
+
   if (data.people.length === 0) {
     grid.innerHTML = '<div class="empty">Ingen deltagere endnu.</div>';
     return;
@@ -1770,6 +1793,11 @@ async function runSpeedTest() {
   }
 }
 
+async function resetSpeedResults() {
+  if (!window.confirm('Nulstil alle speedtest-resultater for gruppen?')) return;
+  await saveData({ ...data, speedResults: [] });
+}
+
 function renderSpeedResults() {
   const box = $('speedtest-leaderboard');
   if (!box) return;
@@ -1964,6 +1992,9 @@ async function init() {
   $('sound-add-btn').onclick = addSound;
 
   $('speedtest-run-btn').onclick = runSpeedTest;
+  $('speedtest-reset-btn').onclick = resetSpeedResults;
+
+  $('badges-reset-btn').onclick = resetBadges;
 
   $('shopping-uncheck-all-btn').onclick = uncheckAllShopping;
   $('shopping-extra-add-btn').onclick = addShoppingExtra;
