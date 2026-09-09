@@ -246,6 +246,48 @@ Alle tre features bruger jeres eksisterende delte KV-data — ingen nye Cloudfla
 
 Alle tre kræver bekræftelse (en "er du sikker?"-dialog) inden de udfører sig, da det er en delt handling der påvirker alles visning.
 
+## v14: "Vores Spil" — genvej til eget LAN-spil + forbedringsforslag
+
+Ny fane under 🔥 Hammer, bygget til jeres eget Godot-spil.
+
+### Hvorfor det ikke bare er ét klik uden opsætning
+
+En webside kan af sikkerhedsmæssige årsager ikke starte et vilkårligt program på din computer — det ville være et alvorligt sikkerhedshul hvis den kunne. Den rigtige løsning (samme metode som Steam bruger til `steam://` og Discord til `discord://`) er en **custom URL-protokol**, som du registrerer én gang på din egen maskine, og som fortæller Windows/Mac/Linux: "når nogen åbner et link der starter med `lanparty-game://`, kør denne .exe."
+
+Når det er sat op, virker knappen i appen med det samme — men **hver af jer skal gøre det selv**, én gang, på jeres egen computer, da spillets .exe ligger et andet sted hos hver af jer.
+
+### Opsætning på Windows
+
+1. Find den fulde sti til jeres spils `.exe`-fil, fx `C:\Spil\MitLanSpil\game.exe`.
+2. Opret en tekstfil kaldet `lanparty-game.reg` med dette indhold (ret stien til jeres egen):
+   ```reg
+   Windows Registry Editor Version 5.00
+
+   [HKEY_CLASSES_ROOT\lanparty-game]
+   @="URL:LAN Party Game Protocol"
+   "URL Protocol"=""
+
+   [HKEY_CLASSES_ROOT\lanparty-game\shell]
+
+   [HKEY_CLASSES_ROOT\lanparty-game\shell\open]
+
+   [HKEY_CLASSES_ROOT\lanparty-game\shell\open\command]
+   @="\"C:\\Spil\\MitLanSpil\\game.exe\""
+   ```
+3. Dobbeltklik filen, bekræft advarslen om at redigere registreringsdatabasen.
+4. Test ved at skrive `lanparty-game://start` direkte i browserens adresselinje — spillet skal starte. Windows vil typisk spørge én gang "vil du åbne dette link med [dit program]?" — sig ja, og luk evt. et lille ekstra vindue der popper op med kommandolinje-argumentet.
+
+**Mac/Linux** bruger samme koncept (en `.desktop`-fil med `MimeType=x-scheme-handler/lanparty-game;` på Linux, eller `CFBundleURLSchemes` i `Info.plist` på Mac) — sig til hvis I bruger et af de to, så uddyber jeg.
+
+**Ret protokolnavnet i koden hvis I vil bruge et andet:** i `app.js`, linjen:
+```js
+const GAME_LAUNCH_PROTOCOL = 'lanparty-game://start';
+```
+
+### Forbedringsforslag
+
+En delt liste hvor alle kan tilføje idéer/feedback til selve spillet, stemme på dem (★), og cykle status ved at klikke: 💡 Idé → 🔧 Under udvikling → ✅ Færdig → tilbage til 💡 Idé. Sorteres automatisk efter status og stemmer, så de mest efterspurgte uafklarede idéer ligger øverst. Ingen ny opsætning nødvendig — bruger jeres eksisterende delte data, ligesom resten af appen.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.

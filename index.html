@@ -96,6 +96,7 @@
           <button class="tab-btn" data-tab="games" data-group="party">Spil</button>
           <button class="tab-btn" data-tab="arena" data-group="party">Arena</button>
           <button class="tab-btn" data-tab="points" data-group="party">Point</button>
+          <button class="tab-btn" data-tab="ourgame" data-group="party">Vores Spil</button>
           <button class="tab-btn" data-tab="tournament" data-group="party">Turnering</button>
           <button class="tab-btn" data-tab="badges" data-group="party">Badges</button>
 
@@ -361,6 +362,25 @@
             <div id="leaderboard" class="leaderboard"></div>
           </section>
           <section id="points-log" class="list"></section>
+        </div>
+
+        <div id="tab-ourgame" class="tab-panel hidden">
+          <section class="card">
+            <h2 class="h2">🚀 Start spillet</h2>
+            <p class="muted">Kræver at du én gang har registreret genvejen på din egen computer — se README for opsætning. Virker herefter med ét klik, ligesom "Join Game"-knapper i Steam/Discord.</p>
+            <a id="game-launch-btn" href="#" class="primary-btn" style="display:inline-block; text-decoration:none; text-align:center;">🎮 Start LAN-spillet</a>
+            <p class="muted small" style="margin-top:8px;">Sker der ingenting når du klikker, er genvejen ikke sat op på denne computer endnu.</p>
+          </section>
+
+          <section class="card">
+            <h2 class="h2">💡 Forbedringsforslag</h2>
+            <p class="muted">Idéer og feedback til selve spillet — saml dem her på tværs af LAN'ene.</p>
+            <div class="inline-form">
+              <input id="feedback-input" class="input" placeholder="Fx 'Tilføj powerup til at gå igennem vægge'" />
+              <button id="feedback-add-btn" class="primary-btn">+ Tilføj</button>
+            </div>
+          </section>
+          <section id="feedback-list" class="list"></section>
         </div>
 
         <div id="tab-tournament" class="tab-panel hidden">

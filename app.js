@@ -39,6 +39,7 @@ function emptyData() {
     tournament: null,
     musicQueue: [],
     badgesResetAt: 0,
+    gameFeedback: [],
   };
 }
 
@@ -94,6 +95,8 @@ function normalizeData(raw) {
   if (next.tournament === undefined) next.tournament = null;
   if (!next.musicQueue) next.musicQueue = [];
   if (!next.badgesResetAt) next.badgesResetAt = 0;
+  if (!next.gameFeedback) next.gameFeedback = [];
+  next.gameFeedback = next.gameFeedback.map((f) => ({ ...f, status: f.status || 'idea', votes: f.votes || {} }));
   return next;
 }
 
@@ -223,6 +226,7 @@ function render() {
   renderPoints();
   renderTournament();
   renderBadges();
+  renderFeedback();
   renderChecklist();
   renderSounds();
   renderSpeedResults();
@@ -1436,6 +1440,119 @@ async function resetTournament() {
   await saveData({ ...data, tournament: null });
 }
 
+/* ---------- Vores Spil: launch shortcut + improvement feedback ---------- */
+
+// ⚠️ Sæt jeres eget custom URL-protokolnavn her (samme navn som I registrerer lokalt — se README).
+const GAME_LAUNCH_PROTOCOL = 'lanparty-game://start';
+
+function initGameLaunchButton() {
+  const btn = $('game-launch-btn');
+  if (!btn) return;
+  btn.href = GAME_LAUNCH_PROTOCOL;
+}
+
+const FEEDBACK_STATUSES = {
+  idea: { label: '💡 Idé', next: 'planned' },
+  planned: { label: '🔧 Under udvikling', next: 'done' },
+  done: { label: '✅ Færdig', next: 'idea' },
+};
+
+function renderFeedback() {
+  const box = $('feedback-list');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (data.gameFeedback.length === 0) {
+    box.innerHTML = '<div class="empty">Ingen forslag endnu — tilføj det første ovenfor.</div>';
+    return;
+  }
+
+  const sorted = [...data.gameFeedback].sort((a, b) => {
+    const order = { idea: 0, planned: 1, done: 2 };
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length;
+  });
+
+  sorted.forEach((item) => {
+    const statusInfo = FEEDBACK_STATUSES[item.status] || FEEDBACK_STATUSES.idea;
+    const card = document.createElement('div');
+    card.className = 'drink-card feedback-card' + (item.status === 'done' ? ' done' : '');
+
+    const info = document.createElement('div');
+    info.className = 'drink-info';
+    const voteCount = Object.keys(item.votes || {}).length;
+    info.innerHTML = `<span class="drink-item-name">${escapeHtml(item.text)}</span><span class="drink-meta">${escapeHtml(item.addedBy)} · ${voteCount} stemme${voteCount === 1 ? '' : 'r'}</span>`;
+    card.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'drink-actions';
+
+    const myVoted = Boolean((item.votes || {})[myName]);
+    const voteBtn = document.createElement('button');
+    voteBtn.className = 'game-vote-btn feedback-vote-btn' + (myVoted ? ' voted' : '');
+    voteBtn.textContent = myVoted ? '★' : '☆';
+    voteBtn.title = 'Stem på forslaget';
+    voteBtn.onclick = () => toggleFeedbackVote(item.id);
+    actions.appendChild(voteBtn);
+
+    const statusBtn = document.createElement('button');
+    statusBtn.className = 'done-btn feedback-status-btn';
+    statusBtn.textContent = statusInfo.label;
+    statusBtn.title = 'Klik for at skifte status';
+    statusBtn.onclick = () => cycleFeedbackStatus(item.id);
+    actions.appendChild(statusBtn);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'drink-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = () => removeFeedback(item.id);
+    actions.appendChild(removeBtn);
+
+    card.appendChild(actions);
+    box.appendChild(card);
+  });
+}
+
+async function addFeedback() {
+  const input = $('feedback-input');
+  const text = input.value.trim();
+  if (!text || !myName) return;
+  const entry = { id: uid(), text, addedBy: myName, status: 'idea', votes: {}, timestamp: Date.now() };
+  await saveData({ ...data, gameFeedback: [...data.gameFeedback, entry] });
+  input.value = '';
+}
+
+async function removeFeedback(id) {
+  await saveData({ ...data, gameFeedback: data.gameFeedback.filter((f) => f.id !== id) });
+}
+
+async function toggleFeedbackVote(id) {
+  if (!myName) return;
+  const next = {
+    ...data,
+    gameFeedback: data.gameFeedback.map((f) => {
+      if (f.id !== id) return f;
+      const votes = { ...(f.votes || {}) };
+      if (votes[myName]) delete votes[myName];
+      else votes[myName] = true;
+      return { ...f, votes };
+    }),
+  };
+  await saveData(next);
+}
+
+async function cycleFeedbackStatus(id) {
+  const next = {
+    ...data,
+    gameFeedback: data.gameFeedback.map((f) => {
+      if (f.id !== id) return f;
+      const statusInfo = FEEDBACK_STATUSES[f.status] || FEEDBACK_STATUSES.idea;
+      return { ...f, status: statusInfo.next };
+    }),
+  };
+  await saveData(next);
+}
+
 /* ---------- Badges / Achievements (computed live from data, filtered by badgesResetAt) ---------- */
 
 // Our uid() format is `${Date.now()}-${random}`, so we can recover a creation
@@ -1974,6 +2091,12 @@ async function init() {
 
   $('tournament-start-btn').onclick = startTournament;
   $('tournament-reset-btn').onclick = resetTournament;
+
+  initGameLaunchButton();
+  $('feedback-add-btn').onclick = addFeedback;
+  $('feedback-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addFeedback();
+  });
 
   $('music-queue-add-btn').onclick = addMusicQueueItem;
   $('music-queue-input').addEventListener('keydown', (e) => {
