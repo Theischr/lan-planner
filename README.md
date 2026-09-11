@@ -1,313 +1,125 @@
-# LAN_PLANNER
+# Husrådet – notifikations-worker
 
-Statisk webapp til at stemme om LAN-datoer, tildele lokation og tælle ned til den aftalte dato.
-Bygget til Cloudflare Pages (gratis tier) — ingen server at drive, ingen build-step.
+En lille, selvstændig Cloudflare Worker der kører hvert 5. minut og sender
+en push-notifikation **pr. begivenhed**, tæt på det tidspunkt den faktisk
+sker — godkendte aftaler, vigtige datoer og ferie-bookinger. Den er bevidst
+adskilt fra selve Husrådet Pages-projektet, fordi tidsstyrede jobs (cron
+triggers) kun understøttes af "rigtige" Workers — ikke af Pages Functions.
 
-> **Før du gør repoet offentligt:** denne README er renset for navne, brugernavne og jeres rigtige domæne. Men hvis I nogensinde har skrevet jeres faktiske `ACCESS_CODE` direkte ind i en committet fil (fx en tidligere version af `wrangler.toml`), ligger den stadig i commit-historikken, selvom I retter filen nu — se afsnittet **"Fjerne tidligere versioner/historik"** nederst for hvordan I renser det, og skift adgangskoden bagefter under Cloudflare → Settings → Environment variables.
+## Hvorfor er dette en separat ting, og hvorfor kræver det mere end de andre ændringer?
 
-## Sådan hænger det sammen
+Alt andet i Husrådet er bygget sådan at du bare pusher til GitHub, og
+Cloudflare Pages bygger og deployer automatisk. Denne del er anderledes:
+den skal deployes med kommandolinje-værktøjet `wrangler`, fordi den bruger
+et npm-pakke (`web-push`) der skal bundles, og fordi cron-jobs hører til
+Workers, ikke Pages. Det er et engangs-setup — bagefter kører den af sig selv.
 
-- `index.html`, `style.css`, `app.js` — selve appen, serveret som statiske filer.
-- `functions/api/data.js` — en Cloudflare Pages Function (kører på Workers-runtime) der læser/skriver de delte data i en KV-namespace.
-- Data (personer, datoer, stemmer, aftalt dato) ligger i én JSON-blob i KV under nøglen `lan-planner-data`.
-- Adgang styres af en simpel adgangskode (miljøvariabel `ACCESS_CODE`), så I tre er de eneste der kan se/ændre data.
+## Forudsætninger
 
-## Deploy — via Cloudflare-dashboardet (nemmest)
+- Node.js installeret lokalt (du har det allerede via dine andre projekter)
+- Adgang til en terminal
 
-1. **Læg koden på GitHub.** Opret et nyt repo, f.eks. `DIT-GITHUB-BRUGERNAVN/lan-planner`, og push denne mappe til det.
-   ```bash
-   cd lan-planner
-   git init
-   git add .
-   git commit -m "Initial LAN planner"
-   git branch -M main
-   git remote add origin https://github.com/DIT-GITHUB-BRUGERNAVN/lan-planner.git
-   git push -u origin main
-   ```
-
-2. **Opret et Cloudflare-konto** (gratis) på https://dash.cloudflare.com hvis du ikke allerede har en.
-
-3. **Opret KV-namespace:**
-   - Gå til **Workers & Pages → KV** i sidemenuen.
-   - Klik **Create namespace**, kald den f.eks. `lan-planner-kv`.
-
-4. **Opret Pages-projektet:**
-   - Gå til **Workers & Pages → Create → Pages → Connect to Git**.
-   - Vælg dit `lan-planner` repo.
-   - Build-indstillinger: lad **Build command** stå tomt, og **Build output directory** = `/` (roden). Der er ingen build-proces nødvendig.
-   - Klik **Save and Deploy**.
-
-5. **Bind KV-namespace til projektet:**
-   - Gå til det nye projekt → **Settings → Functions → KV namespace bindings**.
-   - Tilføj en binding: Variable name = `DATA_KV`, KV namespace = `lan-planner-kv`.
-
-6. **Sæt en adgangskode:**
-   - Samme sted: **Settings → Environment variables**.
-   - Tilføj `ACCESS_CODE` = jeres valgte kode (f.eks. `lanhygge2026`), for både **Production** og **Preview**.
-
-7. **Redeploy** projektet én gang (Settings-ændringer kræver en ny deployment for at slå igennem — gå til **Deployments** og klik **Retry deployment**, eller push en tom commit).
-
-8. Cloudflare giver jer en URL som `https://dit-projekt.pages.dev` — den kan I dele med hinanden. Vil I have et pænere navn, kan I under **Custom domains** koble et underdomæne på, hvis du har et domæne liggende (f.eks. `lan.dintdomæne.dk`).
-
-## Deploy — via Wrangler CLI (alternativ)
-
-Hvis du hellere vil deploye fra din Codespace/terminal:
+## 1. Installér afhængigheder
 
 ```bash
-npm install -g wrangler
-wrangler login
-wrangler kv namespace create lan-planner-kv
-# Kopiér det udskrevne namespace-id ind i wrangler.toml
-wrangler pages deploy . --project-name=lan-planner
+cd husraadet-notifier
+npm install
 ```
 
-Sæt derefter `ACCESS_CODE` og KV-bindingen som beskrevet i punkt 5-6 ovenfor (dashboardet er nemmest til dette, selv ved CLI-deploy).
+## 2. Brug samme KV-namespace som Husrådet-appen
 
-## Efter deploy
+Dette er vigtigt: denne worker skal læse og skrive i **det samme**
+KV-namespace som jeres Pages-projekt (`HUSRAADET_KV`), ellers kan den ikke
+se jeres data.
 
-- Send URL + adgangskode til de to andre. Første gang de åbner den, bliver de bedt om koden (gemmes i browseren, så de kun skal taste den én gang), og derefter om deres navn.
-- Alt gemmes centralt i KV, så I altid ser samme kalender, stemmer og aftalt dato, uanset hvem der åbner den.
-- Appen poller automatisk hvert 20. sekund og har en manuel opdater-knap (↻) i toppen.
+1. Cloudflare-dashboard → **Workers & Pages** → **KV** → find det
+   eksisterende `husraadet`-namespace → kopiér dets **id**.
+2. Åbn `wrangler.toml` i denne mappe og sæt `id` under `[[kv_namespaces]]`
+   til det id.
 
-## Nye faner (v2)
+## 3. Sæt VAPID-nøgler
 
-Appen har nu faner: **Kalender, Drinks, Spil, Mad, Point, Tjekliste**. Alt sammen ligger stadig i den samme KV-blob — ingen nye Cloudflare-ressourcer eller ekstra opsætning krævet, bare de samme filer opdateret.
-
-- **Drinks**: Bestil noget, andre ser det live (op til 15 sek. forsinkelse via polling). Klik "slå notifikationer til" for at få en browser-notifikation når nogen bestiller — virker så længe du har fanen åben et sted, også i baggrunden. Kræver ikke noget setup fra dig, det er indbygget i browseren.
-- **Spil**: Tilføj spilnavn + valgfrit link til et ikon/cover-billede (fx fra Steam eller Google-billeder). Virker linket ikke, falder den tilbage til et 🎮-ikon.
-- **Mad**: Tre lister (Snacks/Frokost/Aftensmad), alle kan tilføje og fjerne punkter.
-- **Point**: Registrér en sejr (spil + vinder + antal point), se automatisk opdateret stilling.
-- **Tjekliste**: Standard-punkter (PC, skærm, mus, tastatur, musemåtte, kabler) er forudfyldt. Hver person har sit eget flueben — I deler listen, men ikke hinandens afkrydsninger.
-
-Efter du har pushet disse filer til dit GitHub-repo (bare erstat `index.html`, `style.css`, `app.js` — `functions/api/data.js` og `wrangler.toml` er uændrede), skal Cloudflare automatisk redeploye.
-
-## Spotify-styring
-
-Ny fane **Musik** lader jer styre afspilning via Spotify Connect (play/pause/skift nummer/lydstyrke + vælg hvilken enhed, fx jeres Google-højtaler, der spiller).
-
-**Sådan virker det:**
-- Bruger PKCE-login direkte fra browseren — intet Client Secret involveret, kun det offentlige Client ID.
-- `spotify-callback.html` skal ligge i repo-roden ved siden af `index.html` — det er filen der matcher jeres registrerede redirect-URI `https://dit-projekt.pages.dev/spotify-callback` (Cloudflare Pages matcher automatisk extensionless URL'er til den tilsvarende `.html`-fil).
-- Login/tokens gemmes kun lokalt i hver persons egen browser (ikke i den delte KV) — hver af jer logger ind med sin egen Spotify-konto.
-- Kræver Spotify Premium på den konto der skal styre afspilningen, og at Spotify-appen er åben/cast'et til jeres Google-højtaler mindst én gang, så den dukker op i enhedslisten.
-
-**Vigtigt ved deploy:** sørg for at `spotify-callback.html` også bliver pushet til GitHub-repoet sammen med de andre filer, og at `spotify.js` er inkluderet — ellers virker Musik-fanen ikke.
-
-## Kommer senere
-
-- **Galleri/meme-slideshow**: droppet for nu, kan tages op igen senere.
-
-## Endnu flere faner (v3)
-
-- **Drinkmenu + hjul**: Under Drinks kan I nu bygge en menu med navn, beskrivelse og billede pr. drink. "🎡 Snurr hjulet" vælger tilfældigt en drink fra menuen og bestiller den automatisk.
-- **Lyde**: Nyt soundboard. Tilføj jeres egne klip via link eller en kort upload (under ~350 KB, gemmes direkte i jeres delte data). **Vigtigt:** vi leverer ikke selv nogen lyde her — de skal komme fra jer, da spil-/meme-lyde typisk er ophavsretligt beskyttede.
-- **Timer**: Stopur med lap-funktion, og en nedtælling/alarm med et indbygget bip (ingen lydfil nødvendig). Rent lokal i browseren, deles ikke mellem jer.
-- **Speedtest**: Gimmick-måling af downloadhastighed og ping mod jeres egen Cloudflare-deployment. Bruger to nye Functions: `functions/api/speedtest.js` (leverer en tilfældig byte-payload) og `functions/api/ping.js` (måler round-trip). Begge er beskyttet af samme `ACCESS_CODE` som resten af appen — ingen ny opsætning nødvendig ud over at pushe filerne.
-
-**Husk ved deploy:** disse to nye filer skal også med til GitHub:
-```
-functions/api/speedtest.js
-functions/api/ping.js
-```
-Sammen med de opdaterede `index.html`, `style.css`, `app.js`, `timer.js`. Tjek som altid under Functions-fanen efter deploy at `/api/speedtest` og `/api/ping` dukker op som routes.
-
-## v4: Grupperet navigation, ingredienser, aim trainer
-
-- **Faner er nu grupperet** i tre kategorier via en ny knaprække øverst: 📋 Planlægning (Kalender, Mad, Indkøb, Tjekliste), 🎉 Fest (Drinks, Spil, Point), 🛠️ Værktøjer (Musik, Lyde, Timer, Speedtest, Aim Trainer). Løser pladsproblemet fra de mange faner.
-- **Automatiske ingredienser til drinkmenuen**: Skriver du et kendt cocktailnavn (fx "Espresso Martini", "Mojito", "Old Fashioned" — se `drink-recipes.js` for hele listen), udfyldes ingredienserne automatisk og lander i Indkøb. Ukendte navne får ingen automatiske ingredienser, men kan redigeres manuelt via "✎ Rediger" på drink-kortet.
-- **Aim Trainer** (under Værktøjer): 20 sekunders klik-målene-så-hurtigt-som-muligt minispil, med et delt highscore-board (bedste antal ramt pr. person, med præcision og reaktionstid).
-- **`.wrap` er udvidet til 900px** (fra 700px) for mere albuerum, plus generelle overflow-sikringer så billeder og lange tekster ikke skubber siden ud i vandret scroll.
-
-**Nye filer at pushe:** `drink-recipes.js`, `aimtrainer.js` — husk dem sammen med de opdaterede `index.html`, `app.js`, `style.css`.
-
-## v5: Installerbar app (PWA) på Android (og iPhone)
-
-Siden er nu en "Progressive Web App" — det betyder Android (og iOS) kan installere den som en rigtig app-genvej med eget ikon, uden at gå gennem Play Store.
-
-**Sådan installerer man den (Android/Chrome):**
-1. Åbn `https://dit-projekt.pages.dev` i Chrome på telefonen.
-2. Tryk på de tre prikker øverst til højre → **"Føj til startskærm"** / **"Installer app"**.
-3. Den lander nu som et almindeligt app-ikon, åbner i fuldskærm uden browser-bjælke.
-
-**Sådan virker det teknisk:**
-- `manifest.json` beskriver appens navn, ikoner og farver (mørkt tema, matcher siden).
-- `icons/` indeholder de genererede app-ikoner (192px, 512px, samt en "maskable" variant til Androids adaptive ikoner).
-- `sw.js` er en service worker der cacher app-filerne netværk-først (opdateringer slår igennem med det samme, men appen virker stadig delvist offline hvis wifi'en driller til LAN'et). Den rører **aldrig** `/api/`-kald, så data er altid friske.
-
-**Nye filer at pushe:** `manifest.json`, `sw.js`, og hele `icons/`-mappen (`icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`).
-
-**Vil du have en rigtig .apk / Play Store-app i stedet?** Det kræver et ekstra lag oven på det her:
-- Nemmeste vej: [PWABuilder.com](https://www.pwabuilder.com) — indsæt jeres URL, og det genererer en installerbar `.apk` baseret på `manifest.json`, som I kan side-loade uden Play Store.
-- For en rigtig Play Store-udgivelse: samme værktøj kan pakke det som en "Trusted Web Activity", men det kræver en Google Play-udviklerkonto (engangsgebyr på $25) og en `assetlinks.json`-fil på domænet der beviser I ejer siden. Sig til hvis det er noget I vil forfølge — det er en overkommelig proces, men adskilt fra selve webappen.
-
-## v6: Arena — lille realtids multiplayer-shooter
-
-**Vigtigt om ophavsret:** dette er et originalt, generisk arena-shooter-spil (bevæg dig, sigt, skyd), ikke en kopi af Counter-Strike — intet navn, ingen assets eller lyde derfra er brugt.
-
-### Hvorfor det er en anden slags deploy end alt det forrige
-
-Realtids-multiplayer kræver en vedvarende forbindelse (WebSocket), hvilket jeres nuværende opsætning (KV + polling hvert 15. sek) ikke understøtter. Det kræver **Cloudflare Durable Objects**, og Cloudflare tillader ikke Durable Objects i selve Pages-projektet — de skal ligge i en **separat Worker**. Derfor er der en helt ny mappe: `game-server/`, som er et selvstændigt projekt der skal deployes for sig, ved siden af (ikke i stedet for) jeres eksisterende Pages-deploy.
-
-### Deploy game-server/ (kør i din Codespace)
-
-1. Åbn `game-server/wrangler.toml` og ret `ACCESS_CODE` til **samme kode** som I bruger på selve LAN_PLANNER-siden.
-2. I terminalen:
-   ```bash
-   cd game-server
-   npx wrangler login    # hvis ikke allerede logget ind
-   npx wrangler deploy
-   ```
-3. Wrangler udskriver en URL i stil med:
-   ```
-   https://lan-arena-game.dit-brugernavn.workers.dev
-   ```
-   Notér den — I skal bruge WebSocket-varianten af den (se næste trin).
-
-### Kobl siden til game-serveren
-
-1. Åbn `game-arena.js` i hovedprojektet.
-2. Øverst, ret:
-   ```js
-   const ARENA_SERVER_URL = 'wss://lan-arena-game.YOUR-SUBDOMAIN.workers.dev/room';
-   ```
-   til jeres rigtige URL (bemærk `wss://` i stedet for `https://`, og `/room` til sidst).
-3. Push `game-arena.js`, det opdaterede `index.html` og `style.css` til jeres GitHub-repo som normalt — Cloudflare Pages redeployer automatisk.
-
-### Sådan spiller I
-
-- Gå til fanen **Arena** under 🎉 Fest.
-- Tryk **"Deltag i kampen"** — WASD for at bevæge sig, mus for at sigte, klik eller mellemrum for at skyde.
-- Én spiller trykker **"Start runde"** og sætter antal kills der skal til for at vinde.
-- Vinderen tilføjes automatisk til jeres delte **Point**-fane (3 point, spillet navngivet "Arena 🎯").
-
-### Begrænsninger at kende til
-
-- **Ingen persistens**: spillets tilstand nulstilles hvis alle forlader og game-serveren går i dvale — det er tilsigtet, det er kun selve runden der er midlertidig, ikke jeres LAN_PLANNER-data.
-- **Simpelt v1**: ingen vægge/forhindringer, ingen liv/skade (ét hit = kill), samme våben til alle. Sig til hvis I vil bygge videre på det.
-- **To adskilte deploys at huske på** fremover: `lan-planner` (Pages) og `lan-arena-game` (Worker) — de deler ikke automatisk opdateringer, så game-server-ændringer kræver `npx wrangler deploy` fra `game-server/`-mappen, ikke et almindeligt GitHub-push.
-
-## v7: Spil-kategorier med drag-and-drop
-
-Under **Spil** er kortene nu delt i tre kolonner: **🔀 Ikke sorteret** (hvor nye forslag lander), **🆓 Har dem (gratis)** og **💰 Skal købes**. Træk et spilkort (i det lille ⠿-håndtag øverst til venstre) mellem kolonnerne for at sortere det.
-
-Det er bygget med Pointer Events i stedet for native HTML5 drag-and-drop, så det virker lige godt med mus **og** touch — vigtigt, da native HTML5-drag typisk fejler stille på mobil, hvor I sandsynligvis bruger appen mest.
-
-Kategorien gemmes pr. spil i den delte KV-data, så alle ser samme opdeling. Stemmer fungerer uændret inden for hver kolonne.
-
-## v8: Arena-opgradering — forhindringer, våben, powerups, dash, blod
-
-Spilserveren (`game-server/src/gameroom.js`) og klienten (`game-arena.js`) er markant udvidet:
-
-- **Forhindringer/kasser** man kan gemme sig bag — blokerer både bevægelse og kugler (kugler bliver absorberet af cover).
-- **Våben-pickups** på banen: 🔫 shotgun (5 kugler i en spredning, langsommere) og 🔥 maskingevær (meget hurtig skudtakt). Standardvåbnet er en almindelig pistol.
-- **Powerups**: ⚡ speed boost, 👻 usynlighed (andre kan næsten ikke se dig — du kan stadig ramme/rammes), 🛡️ skjold (absorberer ét hit i stedet for at dø, kan stakkes op til 2).
-- **Dash på Ctrl** — kort burst af fart i bevægelsesretningen, med ca. 2 sekunders nedkøling, og kort usårlighed mens man dasher (kan bruges til at undvige kugler).
-- **Blod-effekter**: partikeludbrud ved kills plus en falmende blodplet på jorden, rent kosmetisk på klienten.
-- **HUD**: viser dit nuværende våben, aktive powerups og om dash er klar, lige over selve banen.
-
-Stadig bevidst "ét hit = død" (medmindre man har skjold) for at undgå et fuldt liv/skade-system — det holder tingene simple, men med langt mere taktisk dybde end v1.
-
-**Vigtigt:** dette kræver `npx wrangler deploy` fra `game-server/`-mappen igen (samme fremgangsmåde som ved førstegangs-opsætningen) — det er ikke nok at pushe til GitHub, da spilserveren er et separat Worker-projekt. `game-arena.js` skal desuden pushes til hovedrepoet som normalt.
-
-## v9: Spiller-avatarer + layoutfix på drinkmenu
-
-- **Avatar-upload**: 📷-ikonet øverst ved siden af dit navn lader dig uploade et billede af dig selv. Det bliver automatisk beskåret til et kvadrat og komprimeret klient-side (128×128, JPEG) før det gemmes i den delte data, så det ikke fylder unødigt meget — I behøver ikke tænke over billedstørrelsen, en almindelig telefonfoto klarer sig fint. Bruges i øjeblikket i **Arena**, hvor det viser dit billede i stedet for en farvet cirkel.
-- **Bestil-knappen i drinkmenuen** sidder nu altid fast i bunden af kortet, uanset hvor mange linjer ingredienser der er — den "hopper" ikke længere afhængig af tekstmængde.
-
-## v10: "Snurr hjulet" til Spil
-
-Ny knap i **Spil**-fanen ("🎡 Snurr hjulet") vælger tilfældigt ét spil — men **kun** blandt dem der ligger i kolonnen "🆓 Har dem (gratis)". Spil i "Ikke sorteret" eller "Skal købes" tælles ikke med, så I ikke risikerer at hjulet foreslår noget I først skal ud og købe.
-
-Samme visuelle "spinning"-effekt som drink-hjulet — kortene blinker hurtigt og bremser gradvist op, indtil det lander på et. Er "Har dem (gratis)" tom, viser den bare en besked om at tilføje/flytte et spil derhen først.
-
-## v11: Markér spil som "Spillet"
-
-Hvert spilkort har nu en **"✓ Spillet"**-knap. Marker et spil som spillet, og det:
-
-- Bliver visuelt nedtonet (og får en grøn "✓ Spillet"-mærkat) i alle tre kolonner.
-- **Udelukkes automatisk fra "Snurr hjulet"** — hjulet vælger kun blandt uspillede spil i "🆓 Har dem (gratis)".
-
-Tryk knappen igen ("↺ Ikke spillet") for at fortryde og få det tilbage i puljen. Status er delt mellem jer alle, ligesom resten af data.
-
-## v12: Turnering, Badges og fælles musikkø
-
-**Ny fane: Turnering** (under 🔥 Hammer). Vælg spil-navn og hvem der deltager, og få en rigtig udslagsbracket — virker fint med 3 spillere via et automatisk "bye" (en spiller går videre uden kamp i runde 1). Klik på en spiller i en kamp for at markere vinderen; næste runde genereres automatisk, og mesteren får 3 point tilføjet i Point-loggen automatisk ved turneringens afslutning.
-
-**Ny fane: Badges** (under 🔥 Hammer). 10 achievements der låses op automatisk ud fra jeres eksisterende aktivitet — ingen manuel registrering. Blandt andet: 🍺 Bartenderen (10+ drinks), 🎯 Skarpskytten (15+ i Aim Trainer), 🔫 Arena-es (5+ Arena-sejre), 🏆 Turneringsmester, 👑 Pointkongen, med flere. Hver person har sit eget sæt badges, gråtonet indtil de er låst op.
-
-**Fælles musikønsker** (i Musik-fanen, øverst — synlig for alle uanset om I selv er logget ind på Spotify). Alle kan foreslå numre som fri tekst ("Sang - kunstner"). Den/de der er logget ind på Spotify får derudover en "▶ Sæt i kø"-knap, som søger efter nummeret og lægger det direkte i Spotify-køen på den aktive enhed.
-
-Alle tre features bruger jeres eksisterende delte KV-data — ingen nye Cloudflare-ressourcer eller opsætning nødvendig, bare push de opdaterede filer.
-
-## v13: Nulstil badges, Aim Trainer og speedtest
-
-- **Nulstil badges** (i Badges-fanen): sætter et "tæl fra nu"-tidspunkt — al aktivitet før nulstillingen tæller ikke længere med i badge-udregningen, men selve jeres data (drinks, point, stemmer osv.) slettes **ikke**. Praktisk hvis nogen (fx udvikleren 👋) har testet appen solo inden resten af gruppen er kommet med.
-- **Nulstil Aim Trainer-highscores** og **Nulstil speedtest-resultater**: disse rydder derimod de faktiske lister fuldstændigt, da de kun bruges til highscore-visning og ikke har anden funktion at bevare.
-
-Alle tre kræver bekræftelse (en "er du sikker?"-dialog) inden de udfører sig, da det er en delt handling der påvirker alles visning.
-
-## v14: "Vores Spil" — genvej til eget LAN-spil + forbedringsforslag
-
-Ny fane under 🔥 Hammer, bygget til jeres eget Godot-spil.
-
-### Hvorfor det ikke bare er ét klik uden opsætning
-
-En webside kan af sikkerhedsmæssige årsager ikke starte et vilkårligt program på din computer — det ville være et alvorligt sikkerhedshul hvis den kunne. Den rigtige løsning (samme metode som Steam bruger til `steam://` og Discord til `discord://`) er en **custom URL-protokol**, som du registrerer én gang på din egen maskine, og som fortæller Windows/Mac/Linux: "når nogen åbner et link der starter med `lanparty-game://`, kør denne .exe."
-
-Når det er sat op, virker knappen i appen med det samme — men **hver af jer skal gøre det selv**, én gang, på jeres egen computer, da spillets .exe ligger et andet sted hos hver af jer.
-
-### Opsætning på Windows
-
-1. Find den fulde sti til jeres spils `.exe`-fil, fx `C:\Spil\MitLanSpil\game.exe`.
-2. Opret en tekstfil kaldet `lanparty-game.reg` med dette indhold (ret stien til jeres egen):
-   ```reg
-   Windows Registry Editor Version 5.00
-
-   [HKEY_CLASSES_ROOT\lanparty-game]
-   @="URL:LAN Party Game Protocol"
-   "URL Protocol"=""
-
-   [HKEY_CLASSES_ROOT\lanparty-game\shell]
-
-   [HKEY_CLASSES_ROOT\lanparty-game\shell\open]
-
-   [HKEY_CLASSES_ROOT\lanparty-game\shell\open\command]
-   @="\"C:\\Spil\\MitLanSpil\\game.exe\""
-   ```
-3. Dobbeltklik filen, bekræft advarslen om at redigere registreringsdatabasen.
-4. Test ved at skrive `lanparty-game://start` direkte i browserens adresselinje — spillet skal starte. Windows vil typisk spørge én gang "vil du åbne dette link med [dit program]?" — sig ja, og luk evt. et lille ekstra vindue der popper op med kommandolinje-argumentet.
-
-**Mac/Linux** bruger samme koncept (en `.desktop`-fil med `MimeType=x-scheme-handler/lanparty-game;` på Linux, eller `CFBundleURLSchemes` i `Info.plist` på Mac) — sig til hvis I bruger et af de to, så uddyber jeg.
-
-**Ret protokolnavnet i koden hvis I vil bruge et andet:** i `app.js`, linjen:
-```js
-const GAME_LAUNCH_PROTOCOL = 'lanparty-game://start';
-```
-
-### Forbedringsforslag
-
-En delt liste hvor alle kan tilføje idéer/feedback til selve spillet, stemme på dem (★), og cykle status ved at klikke: 💡 Idé → 🔧 Under udvikling → ✅ Færdig → tilbage til 💡 Idé. Sorteres automatisk efter status og stemmer, så de mest efterspurgte uafklarede idéer ligger øverst. Ingen ny opsætning nødvendig — bruger jeres eksisterende delte data, ligesom resten af appen.
-
-## Gør repoet offentligt: fjerne tidligere versioner/historik
-
-At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.
-
-**Nemmeste og mest robuste løsning: start historikken forfra.** Til et lille personligt projekt som dette er det klart at foretrække frem for at forsøge at rense enkelte commits:
+VAPID-nøglerne er allerede genereret og sat ind i appens `index.html`
+(den offentlige nøgle). Den private nøgle må **kun** leve som secret her —
+del den aldrig i klientkode.
 
 ```bash
-cd lan-planner
-git checkout --orphan clean-main   # ny gren uden nogen historik
-git add -A
-git commit -m "Initial public version"
-git branch -D main                 # slet den gamle gren med historik
-git branch -m main                 # omdøb den nye gren til main
-git push -f origin main            # overskriv historikken på GitHub
+npx wrangler secret put VAPID_PUBLIC_KEY
+# indsæt: BGZLJ7c7VSWvOPqyqhupB2hjoDwoaoX5NVlckjOTt574ipLz-eikd3MoQR0IuX-TrqgKbZQOS6sBQ5C35VjfIpQ
+
+npx wrangler secret put VAPID_PRIVATE_KEY
+# indsæt: w2XTgYwoumoujb2gCe2V2wKWXHS1iBEMm7Shgs2TA_c
+
+npx wrangler secret put VAPID_SUBJECT
+# indsæt: mailto:din-mail@example.com   (bruges kun til at identificere jer over for browserens push-tjeneste, vises aldrig i selve notifikationen)
 ```
 
-Bagefter er der kun én commit tilbage på GitHub — al tidligere historik er væk.
+**Vigtigt:** Den offentlige nøgle her skal matche `VAPID_PUBLIC_KEY`-linjen i
+Husrådets `index.html` præcist. Hvis I nogensinde genererer et nyt
+nøglepar, skal begge steder opdateres samtidig, ellers stopper
+notifikationerne med at virke (uden fejl der er synlige for jer — browseren
+afviser bare push'et).
 
-**Vigtigt bagefter:**
-1. **Skift `ACCESS_CODE`** i Cloudflare (Settings → Environment variables, og i `game-server/wrangler.toml` hvis den bruges der) til en ny værdi — også selvom I ikke tror den gamle lækkede, er det billigt at være sikker.
-2. Hvis nogen af jer har **forket eller clonet** repoet lokalt før historik-oprydningen, ligger den gamle historik stadig i den kopi — de skal slette og klone på ny.
-3. GitHub kan i sjældne tilfælde have cachet gamle commits kortvarigt efter en force-push. Har I på noget tidspunkt committet en rigtig hemmelighed (adgangskode, token), er det sikreste stadig at rotere den — historik-oprydning er godt håndværk, men bør ikke stå alene som eneste sikkerhedsforanstaltning.
-4. Alternativt kan I gøre det endnu enklere: **slet repoet på GitHub og opret et helt nyt** med de rensede filer — samme effekt, ingen kommandolinje nødvendig.
+## 4. Deploy
+
+```bash
+npx wrangler deploy
+```
+
+Det opretter workeren og aktiverer cron-triggeren fra `wrangler.toml`
+(kører hver dag kl. 06:00 UTC — juster selv i `wrangler.toml` hvis I vil
+have et andet tidspunkt; husk UTC vs. dansk tid/sommertid).
+
+## 5. Test det
+
+Workeren har også en almindelig `fetch`-handler, så du kan teste den uden
+at vente på cron: åbn bare den URL Wrangler viser efter deploy (noget i
+stil med `husraadet-notifier.dit-navn.workers.dev`) i browseren. Det kører
+det samme som cron-jobbet ville gøre, med det samme.
+
+Tjek loggen for fejl:
+```bash
+npx wrangler tail
+```
+
+## Sådan virker det i praksis
+
+- Workeren kører hvert 5. minut og regner ud, præcis hvornår hver
+  begivenhed skal påmindes:
+  - Har den et klokkeslæt (fx en aftale kl. 19:00), påmindes I som
+    standard **60 minutter før** (styres af `REMINDER_MINUTES` i
+    `wrangler.toml`).
+  - Har den intet klokkeslæt (en heldagsbegivenhed), påmindes I **kl. 8**
+    samme dag, dansk tid (styres af `ALL_DAY_HOUR`).
+- Hver begivenhed giver sin **egen** notifikation, i stedet for én samlet
+  daglig besked — I ser med det samme hvilken aftale det gælder.
+- Kilderne er `date-requests-list` (kun godkendte), `fixed-dates-list`
+  (inkl. årligt tilbagevendende — de påmindes igen hvert år) og
+  `itinerary-list`.
+- En lille "allerede påmindet"-liste i KV (`notified-events`) sikrer at
+  hver begivenhed kun giver én notifikation, selvom workeren tjekker igen
+  hvert 5. minut. Den ryddes automatisk op efter et par dage.
+- Tidszone- og sommertids-beregningen er håndtestet mod begge
+  sommertidsskift (marts/oktober), så påmindelser rammer korrekt hele
+  året, ikke kun i normal-tid.
+- Døde abonnementer (fx hvis nogen sletter appen fra hjemmeskærmen) fjernes
+  automatisk fra KV, næste gang der forsøges sendt til dem.
+
+## Begrænsninger, I bør kende
+
+- Der er **ét fast tidspunkt for alle** (60 min før / kl. 8 for
+  heldagsbegivenheder) — ikke en valgfri påmindelsestid pr. begivenhed.
+  I kan ændre standardtallene i `wrangler.toml`, men det gælder så alle
+  begivenheder ens. Individuel påmindelsestid pr. aftale er en udvidelse,
+  hvis behovet opstår.
+- Der sendes **ikke** en notifikation med det samme, når en aftale
+  foreslås eller godkendes — kun som en tidsbaseret påmindelse op til
+  begivenheden. Det er en anden, separat funktion, hvis I får brug for den.
+- **iPhone/iOS:** Push-notifikationer virker kun hvis Husrådet er "føjet til
+  hjemmeskærmen" (Del-ikonet → "Føj til hjemmeskærm") og åbnes derfra — ikke
+  hvis I bare har den som et faneblad i Safari. Det er en begrænsning i iOS
+  selv, ikke noget vi kan omgå.
+- **Android/Chrome/desktop:** virker uden installation, men er mest
+  pålideligt som installeret PWA der også.
+- Cron kører hvert 5. minut — det er langt inden for Cloudflares gratis
+  kvote (der er tale om ca. 288 kørsler i døgnet).
