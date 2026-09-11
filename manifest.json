@@ -1,16 +1,13 @@
 {
-  "name": "LAN_PLANNER",
-  "short_name": "LAN_PLANNER",
-  "description": "Planlægning, afstemninger og værktøjer til LAN-partyet",
+  "name": "Husrådet",
+  "short_name": "Husrådet",
+  "description": "Fælles prioriteringsliste, datoer, projekter, ferier og indkøb",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0B0F14",
-  "theme_color": "#0B0F14",
+  "background_color": "#EDEEE6",
+  "theme_color": "#2F4A3D",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

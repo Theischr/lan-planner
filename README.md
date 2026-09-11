@@ -1,125 +1,129 @@
-# Husrådet – notifikations-worker
+# Husrådet
 
-En lille, selvstændig Cloudflare Worker der kører hvert 5. minut og sender
-en push-notifikation **pr. begivenhed**, tæt på det tidspunkt den faktisk
-sker — godkendte aftaler, vigtige datoer og ferie-bookinger. Den er bevidst
-adskilt fra selve Husrådet Pages-projektet, fordi tidsstyrede jobs (cron
-triggers) kun understøttes af "rigtige" Workers — ikke af Pages Functions.
+Fælles husstands-app: prioriteringsliste, datogodkendelse med kalenderstatus,
+projekter som Kanban-tavle, ferieplanlægning (krav, idé-tavle, pakkeliste,
+budget, tidslinje), madplan koblet til indkøbslisten, og husets manual.
+Statisk side (`index.html`) + en lille Cloudflare Pages Function
+(`functions/api/kv.js`) der bruger Workers KV som datalager.
 
-## Hvorfor er dette en separat ting, og hvorfor kræver det mere end de andre ændringer?
-
-Alt andet i Husrådet er bygget sådan at du bare pusher til GitHub, og
-Cloudflare Pages bygger og deployer automatisk. Denne del er anderledes:
-den skal deployes med kommandolinje-værktøjet `wrangler`, fordi den bruger
-et npm-pakke (`web-push`) der skal bundles, og fordi cron-jobs hører til
-Workers, ikke Pages. Det er et engangs-setup — bagefter kører den af sig selv.
-
-## Forudsætninger
-
-- Node.js installeret lokalt (du har det allerede via dine andre projekter)
-- Adgang til en terminal
-
-## 1. Installér afhængigheder
+## 1. Læg koden på GitHub
 
 ```bash
-cd husraadet-notifier
-npm install
+cd husraadet-cf
+git init
+git add .
+git commit -m "Første udgave af Husrådet"
+git remote add origin https://github.com/Theischr/husraadet.git
+git push -u origin main
 ```
 
-## 2. Brug samme KV-namespace som Husrådet-appen
+(Opret repoet på GitHub først, fx som privat repo — der er ingen login på
+siden, så den bør ikke være helt offentligt linket.)
 
-Dette er vigtigt: denne worker skal læse og skrive i **det samme**
-KV-namespace som jeres Pages-projekt (`HUSRAADET_KV`), ellers kan den ikke
-se jeres data.
+## 2. Opret Pages-projektet
 
-1. Cloudflare-dashboard → **Workers & Pages** → **KV** → find det
-   eksisterende `husraadet`-namespace → kopiér dets **id**.
-2. Åbn `wrangler.toml` i denne mappe og sæt `id` under `[[kv_namespaces]]`
-   til det id.
+1. Cloudflare-dashboard → **Workers & Pages** → **Create** → **Pages** →
+   **Connect to Git** → vælg `husraadet`-repoet.
+2. Build settings:
+   - Framework preset: **None**
+   - Build command: *(tom)*
+   - Build output directory: `/`
+3. Deploy. Du får en URL som `husraadet.pages.dev`.
 
-## 3. Sæt VAPID-nøgler
+## 3. Opret KV-namespace og bind den
 
-VAPID-nøglerne er allerede genereret og sat ind i appens `index.html`
-(den offentlige nøgle). Den private nøgle må **kun** leve som secret her —
-del den aldrig i klientkode.
+1. **Workers & Pages** → **KV** → **Create namespace** → navngiv den fx `husraadet`.
+2. Gå tilbage til dit Pages-projekt → **Settings** → **Functions** →
+   **KV namespace bindings** → **Add binding**:
+   - Variable name: `HUSRAADET_KV`
+   - KV namespace: den du lige oprettede
+3. **Redeploy** projektet (Settings-ændringer kræver et nyt deploy for at slå igennem).
+
+## 4. (Anbefalet) Begræns adgang til jer to
+
+Siden har ingen login indbygget. Da det er jeres private husstandsdata, er det
+værd at lægge et lag foran med **Cloudflare Access** (gratis for op til 50
+brugere):
+
+1. **Zero Trust**-dashboard → **Access** → **Applications** → **Add an application** → **Self-hosted**.
+2. Peg den på jeres `*.pages.dev`-domæne (eller jeres eget domæne, se nedenfor).
+3. Lav en adgangspolitik der kun tillader jeres to e-mailadresser (login via
+   engangskode på mail, eller Google-login).
+
+Så skal I logge ind med jeres egen mail, før siden overhovedet vises.
+
+## 5. (Valgfrit) Eget domæne
+
+Under Pages-projektet → **Custom domains** kan I pege fx
+`husraadet.jeresdomæne.dk` på siden, hvis I har et domæne liggende i Cloudflare.
+
+## 6. Kalendersync (sat på pause)
+
+Kalenderabonnement til Google/Proton er droppet for nu — koden ligger
+stadig, blot udkommenteret, i `functions/api/calendar.ics.js`. Skulle
+behovet opstå senere: fjern kommentarblokken i den fil, og genskab et
+`CALENDAR_FEED_TOKEN` i Pages-projektets miljøvariabler.
+
+## 7. Push-notifikationer
+
+Appen kan sende jer en push-notifikation pr. aftale, tæt på det faktiske
+tidspunkt — godkendte aftaler, vigtige datoer og ferie-bookinger. Selve
+tilmeldingen sker i appen (menu →
+Notifikationer → Slå til), men afsendelsen kræver at I deployer en lille
+separat worker med et engangs-setup — se `husraadet-notifier/README.md` i
+den mappe. Uden den worker gemmes jeres tilmelding fint, men der bliver
+ikke sendt noget, før workeren er deployet.
+
+## Lokal udvikling
 
 ```bash
-npx wrangler secret put VAPID_PUBLIC_KEY
-# indsæt: BGZLJ7c7VSWvOPqyqhupB2hjoDwoaoX5NVlckjOTt574ipLz-eikd3MoQR0IuX-TrqgKbZQOS6sBQ5C35VjfIpQ
-
-npx wrangler secret put VAPID_PRIVATE_KEY
-# indsæt: w2XTgYwoumoujb2gCe2V2wKWXHS1iBEMm7Shgs2TA_c
-
-npx wrangler secret put VAPID_SUBJECT
-# indsæt: mailto:din-mail@example.com   (bruges kun til at identificere jer over for browserens push-tjeneste, vises aldrig i selve notifikationen)
+npx wrangler pages dev . --kv HUSRAADET_KV
 ```
 
-**Vigtigt:** Den offentlige nøgle her skal matche `VAPID_PUBLIC_KEY`-linjen i
-Husrådets `index.html` præcist. Hvis I nogensinde genererer et nyt
-nøglepar, skal begge steder opdateres samtidig, ellers stopper
-notifikationerne med at virke (uden fejl der er synlige for jer — browseren
-afviser bare push'et).
+(Kræver at du har sat et rigtigt namespace-id i `wrangler.toml`, eller brug
+`--kv HUSRAADET_KV` alene for et midlertidigt lokalt KV-lager.)
 
-## 4. Deploy
+## App-ikoner
 
-```bash
-npx wrangler deploy
-```
+`icon-192.png` og `icon-512.png` samt `manifest.json` gør at siden kan
+"Føjes til hjemmeskærm" på både iOS og Android og derefter åbner uden
+browser-UI, ligesom en rigtig app. De ligger i repo-roden ved siden af
+`index.html`, så de skal ikke flyttes.
 
-Det opretter workeren og aktiverer cron-triggeren fra `wrangler.toml`
-(kører hver dag kl. 06:00 UTC — juster selv i `wrangler.toml` hvis I vil
-have et andet tidspunkt; husk UTC vs. dansk tid/sommertid).
+## Datamodel
 
-## 5. Test det
+Nøgler i KV, hver en JSON-liste (undtagen `meal-plan`, som er ét objekt):
+- `priorities-list` — den fælles prioriteringsliste
+- `date-requests-list` — datoforslag og deres godkendelse/afvisning
+- `projects-list` — husets opgaver (Kanban-status, prioritetsvægt, tildeling, dato)
+- `shopping-list` — indkøbslisten
+- `vacations-list` — idé-tavle (titel, gruppe, ca. pris, beskrivelse, links, favoritter)
+- `vacation-groups` — de redigerbare grupper/faner i idé-tavlen (fx "All
+  inclusive", "No inclusive", "Andet") — oprettes automatisk med disse tre
+  som standard, hvis listen er tom
+- `push-subscriptions` — browser-push-abonnementer (skrives af
+  `functions/api/push-subscribe.js`/`push-unsubscribe.js`, læses af den
+  separate notifikations-worker, se punkt 7 ovenfor)
+- `vacation-requirements-list` — enkeltstående ferie-krav (temperatur, rejseform, periode, andet)
+- `house-manual-list` — husets manual (wifi-kode, serienumre m.m.)
+- `packing-list` — fælles pakkeliste
+- `budget-list` — budgetposter (udgifter og evt. et samlet budget-loft)
+- `itinerary-list` — tidslinje/itinerary (fly, hotel, aktiviteter med dato/tid/adresse)
+- `meal-plan` — ét objekt med ret + ingredienser pr. ugedag (mon–sun)
+- `loft-image` — det uploadede loftsbillede som base64 (komprimeres til maks.
+  1000px bredde i browseren før upload, typisk et par hundrede KB)
+- `loft-zones` — liste af områder på loftsbilledet (x/y i procent, navn, ting)
+- `freezer-drawers` — ét objekt med indhold for skuffe 1–7 (label + varer)
+- `fixed-dates-list` — vigtige datoer der ikke skal godkendes (fødselsdage,
+  frister m.m.), med valgfri årlig gentagelse
 
-Workeren har også en almindelig `fetch`-handler, så du kan teste den uden
-at vente på cron: åbn bare den URL Wrangler viser efter deploy (noget i
-stil med `husraadet-notifier.dit-navn.workers.dev`) i browseren. Det kører
-det samme som cron-jobbet ville gøre, med det samme.
+Dit navn (til at vise hvem der har foreslået/meldt sig på noget) gemmes lokalt
+i browseren (`localStorage`), ikke i KV — så det er pr. enhed, ikke delt.
 
-Tjek loggen for fejl:
-```bash
-npx wrangler tail
-```
+`functions/api/calendar.ics.js` er sat på pause (se punkt 6 ovenfor) — hele
+funktionen er udkommenteret, men rører intet i KV, når/hvis den genaktiveres.
 
-## Sådan virker det i praksis
-
-- Workeren kører hvert 5. minut og regner ud, præcis hvornår hver
-  begivenhed skal påmindes:
-  - Har den et klokkeslæt (fx en aftale kl. 19:00), påmindes I som
-    standard **60 minutter før** (styres af `REMINDER_MINUTES` i
-    `wrangler.toml`).
-  - Har den intet klokkeslæt (en heldagsbegivenhed), påmindes I **kl. 8**
-    samme dag, dansk tid (styres af `ALL_DAY_HOUR`).
-- Hver begivenhed giver sin **egen** notifikation, i stedet for én samlet
-  daglig besked — I ser med det samme hvilken aftale det gælder.
-- Kilderne er `date-requests-list` (kun godkendte), `fixed-dates-list`
-  (inkl. årligt tilbagevendende — de påmindes igen hvert år) og
-  `itinerary-list`.
-- En lille "allerede påmindet"-liste i KV (`notified-events`) sikrer at
-  hver begivenhed kun giver én notifikation, selvom workeren tjekker igen
-  hvert 5. minut. Den ryddes automatisk op efter et par dage.
-- Tidszone- og sommertids-beregningen er håndtestet mod begge
-  sommertidsskift (marts/oktober), så påmindelser rammer korrekt hele
-  året, ikke kun i normal-tid.
-- Døde abonnementer (fx hvis nogen sletter appen fra hjemmeskærmen) fjernes
-  automatisk fra KV, næste gang der forsøges sendt til dem.
-
-## Begrænsninger, I bør kende
-
-- Der er **ét fast tidspunkt for alle** (60 min før / kl. 8 for
-  heldagsbegivenheder) — ikke en valgfri påmindelsestid pr. begivenhed.
-  I kan ændre standardtallene i `wrangler.toml`, men det gælder så alle
-  begivenheder ens. Individuel påmindelsestid pr. aftale er en udvidelse,
-  hvis behovet opstår.
-- Der sendes **ikke** en notifikation med det samme, når en aftale
-  foreslås eller godkendes — kun som en tidsbaseret påmindelse op til
-  begivenheden. Det er en anden, separat funktion, hvis I får brug for den.
-- **iPhone/iOS:** Push-notifikationer virker kun hvis Husrådet er "føjet til
-  hjemmeskærmen" (Del-ikonet → "Føj til hjemmeskærm") og åbnes derfra — ikke
-  hvis I bare har den som et faneblad i Safari. Det er en begrænsning i iOS
-  selv, ikke noget vi kan omgå.
-- **Android/Chrome/desktop:** virker uden installation, men er mest
-  pålideligt som installeret PWA der også.
-- Cron kører hvert 5. minut — det er langt inden for Cloudflares gratis
-  kvote (der er tale om ca. 288 kørsler i døgnet).
+Cloudflares gratis KV-plan har plads til 1 GB i alt, så selv med flere
+loftsbilleder over tid er der rigelig plads — men undgå at uploade meget
+store originalbilleder direkte, da komprimeringen sker i browseren, ikke på
+serveren.

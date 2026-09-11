@@ -1,53 +1,38 @@
-const CACHE_NAME = 'lan-planner-v1';
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/drink-recipes.js',
-  '/spotify.js',
-  '/timer.js',
-  '/aimtrainer.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-];
+// Husrådet service worker — only handles push notifications.
+// No offline caching here on purpose, to keep the app always fresh.
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      Promise.allSettled(APP_SHELL.map((url) => cache.add(url)))
-    )
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
-
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
-    )
-  );
-  self.clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Never touch the API (must always be fresh) or cross-origin requests (Spotify, fonts, etc.)
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
-    return;
+self.addEventListener('push', (event) => {
+  let data = { title: 'Husrådet', body: '' };
+  try {
+    if (event.data) data = event.data.json();
+  } catch (e) {
+    if (event.data) data = { title: 'Husrådet', body: event.data.text() };
   }
-  if (event.request.method !== 'GET') return;
+  const options = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(data.title || 'Husrådet', options));
+});
 
-  // Network-first so updates show up immediately; cached copy is only a fallback when offline.
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
   );
 });

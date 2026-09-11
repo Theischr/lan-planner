@@ -1,489 +1,2144 @@
-<!DOCTYPE html>
-<html lang="da">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>LAN_PLANNER</title>
-<link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#0B0F14" />
-<link rel="icon" href="/icons/icon-192.png" />
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="LAN_PLANNER" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F4A3D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Husrådet">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-512.png">
+<title>Husrådet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css" />
-</head>
-<body>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEEE6;
+    --paper-dim:#E2E3D8;
+    --card:#F6F6F1;
+    --ink:#1F2A24;
+    --ink-soft:#5B6660;
+    --pine:#2F4A3D;
+    --pine-light:#3F614F;
+    --mustard:#C99A3E;
+    --sage:#6E8F6B;
+    --clay:#B4553F;
+    --sky:#5B7C99;
+    --line: rgba(31,42,36,0.12);
+    --shadow: 0 1px 2px rgba(31,42,36,.08), 0 6px 16px rgba(31,42,36,.07);
+    --font-d:'Space Grotesk',sans-serif;
+    --font-b:'Inter',sans-serif;
+    --font-m:'IBM Plex Mono',monospace;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-b);overscroll-behavior-y:none;}
+  input,select,textarea,button{font-size:16px;}
+  #root{display:none;min-height:100vh;flex-direction:column;}
+  #root.shown{display:flex;}
+  #scrollArea{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(96px + var(--safe-bottom));max-width:640px;margin:0 auto;width:100%;}
 
-  <div id="gate" class="gate hidden">
-    <div class="gate-box">
-      <div class="brand-row"><span class="led led-cyan"></span><span class="brand">LAN_PLANNER</span></div>
-      <p class="muted">Indtast adgangskoden I er blevet enige om.</p>
-      <div class="inline-form">
-        <input id="gate-input" class="input" type="password" placeholder="Adgangskode" />
-        <button id="gate-submit" class="primary-btn">Åbn</button>
+  /* ---- gate ---- */
+  #gate{max-width:420px;margin:14vh auto;padding:36px 32px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);text-align:center;}
+  #gate h1{font-family:var(--font-d);font-size:26px;margin:0 0 6px;letter-spacing:-0.01em;}
+  #gate p{color:var(--ink-soft);font-size:14px;margin:0 0 22px;}
+  #gate input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:7px;font-family:var(--font-b);background:#fff;}
+  #gate input:focus{outline:2px solid var(--pine);outline-offset:1px;}
+  #gate button{margin-top:14px;width:100%;padding:14px;border:none;border-radius:7px;background:var(--pine);color:var(--paper);font-family:var(--font-d);font-weight:700;letter-spacing:.02em;cursor:pointer;}
+  #gate button:hover{background:var(--pine-light);}
+
+  /* ---- top bar (app-style) ---- */
+  .topbar{position:sticky;top:0;z-index:20;background:var(--pine);color:var(--paper);padding:calc(12px + var(--safe-top)) 16px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(31,42,36,.15);}
+  .topbar-title{font-family:var(--font-d);font-weight:700;font-size:19px;letter-spacing:-0.01em;}
+  .icon-btn{background:rgba(255,255,255,.12);border:none;color:var(--paper);width:38px;height:38px;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .icon-btn:active{background:rgba(255,255,255,.22);}
+
+  /* ---- bottom nav (app-style) ---- */
+  nav.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 2px calc(6px + var(--safe-bottom));box-shadow:0 -2px 12px rgba(31,42,36,.08);}
+  nav.bottom-nav button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;color:var(--ink-soft);cursor:pointer;font-family:var(--font-b);position:relative;}
+  nav.bottom-nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  nav.bottom-nav button span{font-size:10.5px;font-weight:600;}
+  nav.bottom-nav button.active{color:var(--pine);}
+  nav.bottom-nav .count-dot{position:absolute;top:2px;right:22%;background:var(--mustard);color:#fff;font-family:var(--font-m);font-size:9px;font-weight:700;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+  /* ---- FAB ---- */
+  .fab{position:fixed;right:18px;bottom:calc(74px + var(--safe-bottom));z-index:21;width:56px;height:56px;border-radius:50%;background:var(--mustard);color:var(--ink);border:none;font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(31,42,36,.28);cursor:pointer;}
+  .fab:active{transform:scale(.94);}
+
+  /* ---- bottom sheets ---- */
+  .backdrop{position:fixed;inset:0;background:rgba(20,26,23,.45);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:29;}
+  .backdrop.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--paper);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(31,42,36,.25);max-height:88vh;overflow-y:auto;transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.9,.3,1);padding:8px 20px calc(24px + var(--safe-bottom));}
+  .sheet.open{transform:translateY(0);}
+  .sheet-handle{width:38px;height:4px;background:var(--line);border-radius:3px;margin:8px auto 14px;}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .sheet-head h3{font-family:var(--font-d);font-size:18px;margin:0;}
+  .sheet .fields{display:flex;flex-direction:column;gap:10px;}
+  .sheet input,.sheet select,.sheet textarea{padding:12px 13px;border:1.5px solid var(--line);border-radius:8px;background:#fff;font-family:var(--font-b);width:100%;}
+  .sheet .two{display:flex;gap:8px;}
+  .sheet .two>*{flex:1;min-width:0;}
+  .sheet .act{width:100%;padding:13px;font-size:15px;margin-top:2px;}
+  #userMenuSheet .menu-row{display:flex;align-items:center;justify-content:space-between;padding:13px 2px;border-bottom:1px solid var(--line);font-size:14.5px;}
+  #userMenuSheet .menu-row:last-child{border-bottom:none;}
+  #userMenuSheet .menu-hint{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.5;}
+
+  .who b{color:var(--ink);font-weight:600;}
+  .ghost-btn{background:none;border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-family:var(--font-b);font-size:13.5px;color:var(--ink);cursor:pointer;}
+  .ghost-btn:hover{border-color:var(--pine);color:var(--pine);}
+  #kioskExit{position:fixed;top:calc(10px + var(--safe-top));right:10px;z-index:25;}
+
+  section.panel{display:none;animation:fade .25s ease;}
+  section.panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .empty{padding:30px 18px;text-align:center;color:var(--ink-soft);font-size:14px;border:1.5px dashed var(--line);border-radius:8px;}
+
+  /* ---- cards ---- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .15s ease;}
+  .card:hover{transform:translateY(-1px);}
+  .card .title{font-family:var(--font-d);font-weight:700;font-size:16px;margin:0 0 3px;}
+  .card .meta{font-family:var(--font-m);font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .card .note{font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;}
+  .card .row{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .pill{display:inline-flex;align-items:center;white-space:nowrap;font-family:var(--font-m);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:20px;border:1px solid var(--line);color:var(--ink-soft);}
+  .pill.mustard{border-color:var(--mustard);color:#8a6a24;background:rgba(201,154,62,.12);}
+  .pill.sage{border-color:var(--sage);color:#3f5a3d;background:rgba(110,143,107,.12);}
+
+  button.act{font-family:var(--font-b);font-weight:600;font-size:12.5px;padding:7px 12px;border-radius:6px;border:1px solid var(--pine);background:#fff;color:var(--pine);cursor:pointer;}
+  button.act:hover{background:var(--pine);color:#fff;}
+  button.act.approve{border-color:var(--sage);color:#3f5a3d;}
+  button.act.approve:hover{background:var(--sage);color:#fff;}
+  button.act.decline{border-color:var(--clay);color:var(--clay);}
+  button.act.decline:hover{background:var(--clay);color:#fff;}
+  button.act.small{padding:5px 9px;font-size:11.5px;}
+  button.link{background:none;border:none;color:var(--ink-soft);text-decoration:underline;font-size:12px;cursor:pointer;padding:0;}
+
+  /* stamp signature element */
+  .stamp{position:absolute;top:12px;right:16px;font-family:var(--font-m);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.12em;padding:4px 10px;border:2.5px solid;border-radius:5px;transform:rotate(-7deg);animation:stampIn .35s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes stampIn{0%{opacity:0;transform:rotate(-7deg) scale(2.2);}70%{opacity:1;}100%{opacity:1;transform:rotate(-7deg) scale(1);}}
+  .stamp.approved{color:var(--sage);border-color:var(--sage);}
+  .stamp.declined{color:var(--clay);border-color:var(--clay);}
+
+  /* add form */
+  .section-label{font-family:var(--font-d);font-weight:700;font-size:13px;color:var(--pine);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px;padding-top:6px;border-top:1px solid var(--line);}
+  .section-label:first-child{border-top:none;padding-top:0;}
+  .section-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .section-label-row .section-label{margin:0;border:none;padding:0;}
+  .mini-add{background:var(--pine);color:var(--paper);border:none;width:28px;height:28px;border-radius:50%;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+
+  .view-toggle{display:flex;background:var(--paper-dim);border-radius:8px;padding:2px;}
+  .view-toggle button{background:none;border:none;padding:6px 12px;font-family:var(--font-b);font-weight:600;font-size:12.5px;color:var(--ink-soft);border-radius:6px;cursor:pointer;}
+  .view-toggle button.active{background:var(--card);color:var(--pine);box-shadow:var(--shadow);}
+
+  .group-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .group-tabs button{flex-shrink:0;background:var(--paper-dim);border:none;padding:7px 14px;border-radius:20px;font-family:var(--font-b);font-weight:600;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap;}
+  .group-tabs button.active{background:var(--pine);color:var(--paper);}
+  .group-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .group-edit-row input{flex:1;}
+
+  .board{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px 16px;padding:0 16px 6px;-webkit-overflow-scrolling:touch;}
+  .board-col{flex:0 0 82%;scroll-snap-align:start;background:var(--paper-dim);border-radius:12px;padding:10px;min-width:0;}
+  .board-col h4{font-family:var(--font-d);font-weight:700;font-size:13px;margin:2px 4px 10px;display:flex;align-items:center;justify-content:space-between;color:var(--ink);}
+  .board-col h4 .n{font-family:var(--font-m);font-weight:500;font-size:11px;color:var(--ink-soft);}
+  .board-card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-bottom:8px;box-shadow:var(--shadow);}
+  .board-card .title{font-family:var(--font-d);font-weight:700;font-size:14px;margin:0 0 4px;}
+  .board-card .row{display:flex;flex-wrap:wrap;align-items:center;margin-top:8px;gap:6px;}
+  .weight-pill{display:inline-flex;align-items:center;white-space:nowrap;font-family:var(--font-m);font-size:10px;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:20px;}
+  .weight-hoej{background:rgba(180,85,63,.14);color:var(--clay);}
+  .weight-mellem{background:rgba(201,154,62,.14);color:#8a6a24;}
+  .weight-lav{background:rgba(110,143,107,.14);color:#3f5a3d;}
+  .move-btns{display:flex;gap:4px;}
+  .move-btns button{background:none;border:1px solid var(--line);border-radius:5px;width:24px;height:24px;font-size:11px;cursor:pointer;color:var(--ink-soft);}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-title{font-family:var(--font-d);font-weight:700;font-size:15px;}
+  .cal-grid{display:grid;grid-template-columns:28px repeat(7,1fr);gap:4px;margin-bottom:8px;align-items:stretch;}
+  .cal-dow{font-family:var(--font-m);font-size:10px;color:var(--ink-soft);text-align:center;padding-bottom:2px;}
+  .cal-wnum{font-family:var(--font-m);font-size:10px;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+  .cal-day{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12.5px;border-radius:7px;color:var(--ink);background:var(--card);}
+  .cal-day.other{opacity:.3;}
+  .cal-day.today{font-weight:700;box-shadow:inset 0 0 0 1.5px var(--pine);}
+  .cal-day .dots{display:flex;gap:2px;height:5px;}
+  .cal-day .dots i{width:5px;height:5px;border-radius:50%;display:block;box-sizing:border-box;}
+  .cal-day .dots i.approved{background:var(--sage);}
+  .cal-day .dots i.pending{background:transparent;border:1.3px solid var(--mustard);}
+  .cal-day .dots i.fixed{background:var(--sky);}
+  .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin-bottom:18px;flex-wrap:wrap;}
+  .cal-legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px;box-sizing:border-box;}
+  .dot-approved{background:var(--sage);}
+  .dot-pending{background:transparent;border:1.5px solid var(--mustard);}
+  .dot-fixed{background:var(--sky);}
+
+  .budget-total{background:var(--paper-dim);border-radius:8px;padding:10px 14px;font-size:13.5px;margin-bottom:8px;}
+
+  .loft-empty{border:1.5px dashed var(--line);border-radius:10px;padding:22px 16px;text-align:center;}
+  .loft-empty p{font-size:13px;color:var(--ink-soft);margin:0 0 12px;}
+  .loft-img-wrap{position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px;background:var(--paper-dim);}
+  .loft-img-wrap img{display:block;width:100%;height:auto;}
+  .loft-img-wrap.add-mode{cursor:crosshair;outline:2px dashed var(--mustard);outline-offset:-2px;}
+  .loft-pin{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:var(--pine);color:var(--paper);border:2px solid var(--paper);font-family:var(--font-m);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(31,42,36,.35);}
+  .loft-hint{font-size:12px;color:var(--ink-soft);margin:0 0 10px;}
+  .zone-item-row{display:flex;align-items:center;gap:10px;background:var(--paper-dim);border-radius:7px;padding:8px 11px;margin-bottom:6px;font-size:13.5px;}
+  .zone-item-row span{flex:1;}
+
+  .freezer-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 16px;margin-bottom:7px;cursor:pointer;}
+  .freezer-row .num{font-family:var(--font-d);font-weight:700;color:var(--mustard);min-width:20px;}
+  .freezer-row .info{flex:1;}
+  .freezer-row .info .lbl{font-size:14px;font-weight:600;}
+  .freezer-row .info .cnt{font-family:var(--font-m);font-size:11px;color:var(--ink-soft);}
+
+  .prio-list .card{display:flex;align-items:flex-start;gap:12px;}
+  .prio-list .rank{font-family:var(--font-d);font-weight:700;font-size:18px;color:var(--mustard);min-width:24px;}
+  .prio-list .arrows{display:flex;flex-direction:column;gap:2px;}
+  .prio-list .arrows button{background:none;border:1px solid var(--line);border-radius:4px;width:26px;height:22px;font-size:11px;cursor:pointer;color:var(--ink-soft);}
+  .move-row{display:flex;flex-direction:row;gap:4px;flex-shrink:0;}
+  .move-row button{background:none;border:1px solid var(--line);border-radius:4px;width:24px;height:24px;font-size:11px;cursor:pointer;color:var(--ink-soft);}
+  .move-row button:disabled{cursor:default;}
+  .prio-list .body{flex:1;min-width:0;}
+  .prio-list .done .title{text-decoration:line-through;color:var(--ink-soft);}
+
+  .shop-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 16px;margin-bottom:7px;}
+  .shop-row.checked{opacity:.55;}
+  .shop-row.checked .item{text-decoration:line-through;}
+  .shop-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--sage);flex-shrink:0;}
+  .shop-row .item{flex:1;font-size:14.5px;}
+  .shop-row .meta{font-family:var(--font-m);font-size:10.5px;color:var(--ink-soft);}
+  .shop-toolbar{display:flex;justify-content:flex-end;margin-bottom:10px;}
+
+  .krav-group{margin-bottom:16px;}
+  .krav-group h4{font-family:var(--font-d);font-weight:700;font-size:12.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px;}
+  .empty-mini{padding:9px 12px;font-size:12.5px;color:var(--ink-soft);border:1px dashed var(--line);border-radius:7px;}
+
+  #toast{position:fixed;left:50%;bottom:calc(78px + var(--safe-bottom));transform:translate(-50%,20px);background:var(--ink);color:var(--paper);font-size:13px;padding:10px 18px;border-radius:8px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:50;max-width:90vw;text-align:center;}
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+
+  .assignee-badge{display:inline-flex;align-items:center;white-space:nowrap;font-family:var(--font-m);font-size:11px;background:var(--pine);color:var(--paper);padding:3px 9px;border-radius:20px;}
+
+  /* kiosk mode */
+  body.kiosk #scrollArea{max-width:1100px;padding-bottom:24px;}
+  body.kiosk .no-kiosk{display:none !important;}
+  body.kiosk .card{font-size:16px;padding:22px 24px;}
+  body.kiosk .card .title{font-size:20px;}
+  body.kiosk .topbar-title{font-size:24px;}
+  body.kiosk{background:var(--pine);}
+  body.kiosk .card{background:var(--paper);}
+</style>
+
+<div id="toast"></div>
+
+<div id="gate">
+  <h1>Husrådet</h1>
+  <p>Hvem er du? Bruges kun til at vise hvem der har foreslået, meldt sig på, eller godkendt noget.</p>
+  <input id="nameInput" placeholder="Dit navn" maxlength="30" />
+  <button onclick="saveName()">Fortsæt</button>
+</div>
+
+<div id="backdrop" class="backdrop" onclick="closeSheet()"></div>
+
+<div id="root">
+  <header class="topbar">
+    <span class="topbar-title" id="topbarTitle">Prioriteter</span>
+    <button class="icon-btn no-kiosk" onclick="openUserMenu()" aria-label="Menu">⋮</button>
+  </header>
+  <button class="ghost-btn" style="display:none" id="kioskExit" onclick="toggleKiosk()">Afslut kiosk</button>
+
+  <main id="scrollArea">
+    <section class="panel" id="panel-priorities">
+      <div class="prio-list" id="listPriorities"></div>
+    </section>
+
+    <section class="panel" id="panel-dates">
+      <div class="cal-head">
+        <button class="ghost-btn" onclick="calMonthShift(-1)" aria-label="Forrige måned">‹</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button class="ghost-btn" onclick="calMonthShift(1)" aria-label="Næste måned">›</button>
       </div>
-      <p id="gate-error" class="error-text hidden">Forkert kode, prøv igen.</p>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i class="dot dot-approved"></i> Godkendt</span>
+        <span><i class="dot dot-pending"></i> Afventer</span>
+        <span><i class="dot dot-fixed"></i> Vigtig dato</span>
+      </div>
+
+      <div class="section-label-row">
+        <p class="section-label" style="border-top:none;padding-top:0;margin:0;">Til godkendelse</p>
+      </div>
+      <div id="listDates"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Vigtige datoer</p>
+        <button class="mini-add no-kiosk" onclick="openAddFixedDate()" aria-label="Tilføj vigtig dato">+</button>
+      </div>
+      <div id="listFixedDates"></div>
+    </section>
+
+    <section class="panel" id="panel-projects">
+      <div class="section-label-row">
+        <p class="section-label" style="border-top:none;padding-top:0;margin:0;">Husets manual</p>
+        <button class="mini-add no-kiosk" onclick="openAddManual()" aria-label="Tilføj til manual">+</button>
+      </div>
+      <div id="listManual"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Opgaver</p>
+        <div class="view-toggle no-kiosk">
+          <button id="viewToggleBoard" class="active" onclick="setProjectView('board')">Tavle</button>
+          <button id="viewToggleList" onclick="setProjectView('list')">Liste</button>
+        </div>
+      </div>
+      <div id="boardProjects" class="board"></div>
+      <div id="listProjects" style="display:none;"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Loftet</p>
+        <button class="mini-add no-kiosk" id="loftModeBtn" onclick="toggleLoftZoneMode()" aria-label="Tilføj område" style="display:none;">+</button>
+      </div>
+      <div id="loftWrap"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Fryser</p>
+      </div>
+      <div id="listFreezer"></div>
+    </section>
+
+    <section class="panel" id="panel-vacations">
+      <div class="section-label-row">
+        <p class="section-label" style="border-top:none;padding-top:0;margin:0;">Krav og ønsker</p>
+        <button class="mini-add no-kiosk" onclick="openSheet('addBoxKrav')" aria-label="Tilføj krav">+</button>
+      </div>
+      <div id="listKrav"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Idé-tavle</p>
+        <div style="display:flex;gap:6px;">
+          <button class="ghost-btn no-kiosk" onclick="openManageGroups()" aria-label="Rediger grupper" style="padding:6px 10px;">Grupper</button>
+          <button class="mini-add no-kiosk" onclick="openAddVacation()" aria-label="Tilføj idé">+</button>
+        </div>
+      </div>
+      <p class="menu-hint" style="margin:-6px 0 10px;">Links, noter og skærmbillede-links om hoteller, seværdigheder og restauranter.</p>
+      <div class="group-tabs" id="vacGroupTabs"></div>
+      <div id="listVacations"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Pakkeliste</p>
+        <button class="mini-add no-kiosk" onclick="openSheet('addBoxPack')" aria-label="Tilføj til pakkeliste">+</button>
+      </div>
+      <div id="listPacking"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Budget</p>
+        <button class="mini-add no-kiosk" onclick="openAddBudget()" aria-label="Tilføj udgift">+</button>
+      </div>
+      <div id="budgetTotal" class="budget-total"></div>
+      <div id="listBudget"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Tidslinje</p>
+        <button class="mini-add no-kiosk" onclick="openAddItinerary()" aria-label="Tilføj til tidslinje">+</button>
+      </div>
+      <div id="listItinerary"></div>
+    </section>
+
+    <section class="panel" id="panel-shopping">
+      <div class="section-label-row">
+        <p class="section-label" style="border-top:none;padding-top:0;margin:0;">Madplan</p>
+      </div>
+      <div id="listMealPlan"></div>
+
+      <div class="section-label-row">
+        <p class="section-label">Indkøbsliste</p>
+      </div>
+      <div id="listShopping"></div>
+    </section>
+  </main>
+
+  <button class="fab no-kiosk" id="fab" onclick="openSheetForActiveTab()" aria-label="Tilføj">+</button>
+
+  <nav class="bottom-nav">
+    <button data-tab="priorities" onclick="setTab('priorities')">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke-linecap="round"/></svg>
+      <span>Prioriteter</span>
+      <span class="count-dot" id="cnt-priorities" style="display:none;"></span>
+    </button>
+    <button data-tab="dates" onclick="setTab('dates')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>
+      <span>Datoer</span>
+      <span class="count-dot" id="cnt-dates" style="display:none;"></span>
+    </button>
+    <button data-tab="projects" onclick="setTab('projects')">
+      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a3 3 0 1 0-4.24 4.24l-6 6a1.5 1.5 0 0 0 2.12 2.12l6-6a3 3 0 1 0 4.24-4.24l-2.83-2.83z" stroke-linejoin="round"/></svg>
+      <span>Projekter</span>
+      <span class="count-dot" id="cnt-projects" style="display:none;"></span>
+    </button>
+    <button data-tab="vacations" onclick="setTab('vacations')">
+      <svg viewBox="0 0 24 24"><path d="M2 16l20-8-8 20-2-8-8-2z" stroke-linejoin="round"/></svg>
+      <span>Ferier</span>
+      <span class="count-dot" id="cnt-vacations" style="display:none;"></span>
+    </button>
+    <button data-tab="shopping" onclick="setTab('shopping')">
+      <svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z" stroke-linejoin="round"/><path d="M6 6L5 3H2M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+      <span>Indkøb</span>
+      <span class="count-dot" id="cnt-shopping" style="display:none;"></span>
+    </button>
+  </nav>
+</div>
+
+<!-- Sheets -->
+<div class="sheet" id="userMenuSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Menu</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="menu-row"><span>Du er <b id="whoName"></b></span><button class="ghost-btn" onclick="switchUser()">Skift</button></div>
+  <div class="menu-row"><span>Kiosk-visning</span><button class="ghost-btn" onclick="toggleKiosk()">Slå til</button></div>
+  <div class="menu-row"><span>Notifikationer</span><button class="ghost-btn" id="notifToggleBtn" onclick="toggleNotifications()">Slå til</button></div>
+  <div class="menu-row"><span id="lastSync">—</span><button class="ghost-btn" onclick="refreshAll(true)">Opdatér</button></div>
+  <p class="menu-hint" id="notifHint">Én daglig besked om morgenen med dagens godkendte aftaler, vigtige datoer og bookinger fra ferie-tidslinjen. Kræver at siden er føjet til hjemmeskærmen på iPhone.</p>
+  <p class="menu-hint">Delte lister er synlige for alle der har dette link.</p>
+</div>
+
+<div class="sheet" id="addBoxPrio">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="prioSheetTitle">Tilføj punkt</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="prioTitle" placeholder="Fx “Book VVS til badeværelset”" />
+    <textarea id="prioNote" placeholder="Note (valgfri)" rows="2"></textarea>
+    <button class="act" id="prioSaveBtn" onclick="addPriority()">Tilføj til listen</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxDate">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Foreslå en dato</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="dateTitle" placeholder="Fx “Julefrokost hos Anne”" />
+    <div class="two">
+      <input id="dateDate" type="date" />
+      <input id="dateTime" type="time" />
+    </div>
+    <textarea id="dateNote" placeholder="Note (valgfri)" rows="2"></textarea>
+    <button class="act" onclick="addDateRequest()">Send til godkendelse</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxFixedDate">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="fixedSheetTitle">Vigtig dato</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="fixedTitle" placeholder="Fx “Mors fødselsdag” eller “Skattefrist”" />
+    <div class="two">
+      <input id="fixedDate" type="date" />
+      <input id="fixedTime" type="time" />
+    </div>
+    <textarea id="fixedNote" placeholder="Note (valgfri)" rows="2"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);">
+      <input type="checkbox" id="fixedRecurring" style="width:auto;" /> Gentages hvert år
+    </label>
+    <button class="act" id="fixedSaveBtn" onclick="addFixedDate()">Gem</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxProj">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="projSheetTitle">Nyt projekt</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="projTitle" placeholder="Fx “Male hegnet”" />
+    <textarea id="projNote" placeholder="Beskrivelse (valgfri)" rows="2"></textarea>
+    <div class="two">
+      <select id="projType">
+        <option value="faelles">Fælles projekt</option>
+        <option value="individuel">Individuel opgave</option>
+      </select>
+      <input id="projDate" type="date" />
+    </div>
+    <select id="projWeight">
+      <option value="hoej">Høj — skal gøres i dag</option>
+      <option value="mellem" selected>Mellem — denne uge</option>
+      <option value="lav">Lav — hvis du keder dig</option>
+    </select>
+    <button class="act" id="projSaveBtn" onclick="addProject()">Opret projekt</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxManual">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="manualSheetTitle">Tilføj til manual</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="manualLabel" placeholder="Fx “Wifi-kode” eller “Ventilationsanlæg, serienummer”" />
+    <input id="manualValue" placeholder="Fx “husrad2024” eller “SN-88213”" />
+    <textarea id="manualNote" placeholder="Note (valgfri)" rows="2"></textarea>
+    <button class="act" id="manualSaveBtn" onclick="addManual()">Gem</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxZoneName">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Navngiv område</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="zoneNameInput" placeholder="Fx “Julepynt” eller “Gammelt børnetøj”" onkeydown="if(event.key==='Enter')saveNewZone()" />
+    <button class="act" onclick="saveNewZone()">Opret område</button>
+  </div>
+</div>
+
+<div class="sheet" id="zoneDetailSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="zoneDetailTitle">Område</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="zoneRenameInput" placeholder="Områdenavn" onchange="renameZone()" />
+    <div class="two">
+      <input id="zoneItemInput" placeholder="Fx “3 kasser julepynt”" onkeydown="if(event.key==='Enter')addZoneItem()" />
+      <button class="act small" onclick="addZoneItem()">Tilføj</button>
+    </div>
+    <div id="zoneItemsList"></div>
+    <button class="link" style="color:var(--clay);" onclick="deleteZone()">Slet område</button>
+  </div>
+</div>
+
+<div class="sheet" id="freezerDrawerSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="freezerSheetTitle">Skuffe</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="freezerLabelInput" placeholder="Navn (fx “Kød” eller “Grønt”)" onchange="renameFreezerDrawer()" />
+    <div class="two">
+      <input id="freezerItemInput" placeholder="Fx “Hakket oksekød, 500g”" onkeydown="if(event.key==='Enter')addFreezerItem()" />
+      <button class="act small" onclick="addFreezerItem()">Tilføj</button>
+    </div>
+    <div id="freezerItemsList"></div>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxKrav">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Tilføj krav</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <select id="kravType">
+      <option value="temperatur">Temperatur</option>
+      <option value="rejseform">Rejseform</option>
+      <option value="periode">Ferieperiode</option>
+      <option value="andet">Andet ønske</option>
+    </select>
+    <input id="kravValue" placeholder="Fx “ligegyldigt”, “all inclusive eller vandretur”…" onkeydown="if(event.key==='Enter')addKrav()" />
+    <button class="act" onclick="addKrav()">Tilføj krav</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxVac">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="vacSheetTitle">Ny idé</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="vacTitle" placeholder="Fx “Hotel Alfama, Lissabon”" />
+    <select id="vacGroup"></select>
+    <input id="vacPrice" placeholder="Ca. pris (fx “8.000 kr.” eller “~1.500 kr./person”)" />
+    <textarea id="vacNote" placeholder="Note eller beskrivelse" rows="2"></textarea>
+    <textarea id="vacLinks" placeholder="Links (ét pr. linje) — fx til hjemmeside eller skærmbillede" rows="2"></textarea>
+    <button class="act" id="vacSaveBtn" onclick="addVacation()">Tilføj forslag</button>
+  </div>
+</div>
+
+<div class="sheet" id="manageGroupsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Rediger grupper</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <div id="groupsEditList"></div>
+    <div class="two">
+      <input id="newGroupName" placeholder="Ny gruppe, fx “Storbyferie”" onkeydown="if(event.key==='Enter')addGroup()" />
+      <button class="act small" onclick="addGroup()">Tilføj</button>
     </div>
   </div>
+</div>
 
-  <div id="app" class="page hidden">
-    <div class="wrap">
-      <header class="header">
-        <div class="brand-row">
-          <span class="led led-cyan"></span>
-          <span class="brand">LAN_PLANNER</span>
-        </div>
-        <div class="status-row">
-          <span id="status-led" class="led led-green"></span>
-          <span id="status-text" class="status-text">tilsluttet</span>
-          <button id="refresh-btn" class="icon-btn" title="Genindlæs">&#x21bb;</button>
-        </div>
-      </header>
-
-      <div id="error-box" class="error-box hidden"></div>
-
-      <div id="countdown-banner" class="countdown-banner hidden">
-        <div class="countdown-label">NÆSTE LAN</div>
-        <div id="countdown-date" class="countdown-date"></div>
-        <div id="countdown-timer" class="countdown-timer"></div>
-        <div id="countdown-location" class="countdown-location"></div>
-        <button id="unagree-btn" class="link-btn">fortryd aftalt dato</button>
-      </div>
-
-      <section id="name-section" class="card hidden">
-        <h2 class="h2">Hvem er du?</h2>
-        <p class="muted">Vælg dit navn, eller tilføj dig selv første gang.</p>
-        <div id="name-chips" class="chip-row"></div>
-        <div class="inline-form">
-          <input id="name-input" class="input" placeholder="Dit navn" />
-          <button id="name-submit" class="primary-btn">Fortsæt</button>
-        </div>
-      </section>
-
-      <div id="main-section" class="hidden">
-        <section class="top-row">
-          <div class="who-am-i">
-            <img id="my-avatar-preview" class="avatar-preview hidden" alt="" />
-            <label class="avatar-upload-btn" title="Upload avatar-billede">
-              📷
-              <input id="avatar-file-input" type="file" accept="image/*" class="hidden" />
-            </label>
-            <span>Du er <strong id="who-am-i-name"></strong></span>
-            <button id="switch-name-btn" class="link-btn">skift</button>
-          </div>
-          <div class="add-person-form">
-            <input id="new-person-input" class="input-small" placeholder="Tilføj deltager" />
-            <button id="add-person-btn" class="icon-btn">+</button>
-          </div>
-        </section>
-
-        <nav id="group-bar" class="group-bar">
-          <button class="group-btn" data-group="planning">📋 Planlægning</button>
-          <button class="group-btn active" data-group="party">🔥 Hammer</button>
-          <button class="group-btn" data-group="tools">🛠️ Værktøjer</button>
-        </nav>
-
-        <nav id="tab-bar" class="tab-bar">
-          <button class="tab-btn" data-tab="calendar" data-group="planning">Kalender</button>
-          <button class="tab-btn" data-tab="food" data-group="planning">Mad</button>
-          <button class="tab-btn" data-tab="shopping" data-group="planning">Indkøb</button>
-          <button class="tab-btn" data-tab="checklist" data-group="planning">Tjekliste</button>
-
-          <button class="tab-btn active" data-tab="drinks" data-group="party">Drinks</button>
-          <button class="tab-btn" data-tab="games" data-group="party">Spil</button>
-          <button class="tab-btn" data-tab="arena" data-group="party">Arena</button>
-          <button class="tab-btn" data-tab="points" data-group="party">Point</button>
-          <button class="tab-btn" data-tab="ourgame" data-group="party">Vores Spil</button>
-          <button class="tab-btn" data-tab="tournament" data-group="party">Turnering</button>
-          <button class="tab-btn" data-tab="badges" data-group="party">Badges</button>
-
-          <button class="tab-btn" data-tab="spotify" data-group="tools">Musik</button>
-          <button class="tab-btn" data-tab="sounds" data-group="tools">Lyde</button>
-          <button class="tab-btn" data-tab="timer" data-group="tools">Timer</button>
-          <button class="tab-btn" data-tab="speedtest" data-group="tools">Speedtest</button>
-          <button class="tab-btn" data-tab="aim" data-group="tools">Aim Trainer</button>
-        </nav>
-
-        <div id="tab-calendar" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Foreslå en dato</h2>
-            <div class="inline-form">
-              <input id="new-date-input" class="input" type="date" />
-              <button id="add-date-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-          </section>
-          <section id="dates-list" class="list"></section>
-        </div>
-
-        <div id="tab-drinks" class="tab-panel">
-          <section class="card">
-            <h2 class="h2">Bestil en drink</h2>
-            <p class="muted">Alle med fanen åben får besked med det samme.</p>
-            <div class="inline-form">
-              <input id="drink-item-input" class="input" placeholder="Hvad vil du have? (fx en Fadøl)" />
-              <button id="drink-order-btn" class="primary-btn">Bestil</button>
-            </div>
-            <div id="notif-hint" class="muted small hidden" style="margin-top:8px;">
-              Tips: <button id="enable-notif-btn" class="link-btn">slå notifikationer til</button> for at få besked om nye bestillinger.
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
-              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
-            </div>
-            <div id="wheel-result" class="wheel-result hidden"></div>
-            <div id="drink-menu-list" class="game-grid"></div>
-          </section>
-
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Bestillinger</h2>
-              <button id="drinks-clear-done-btn" class="link-btn hidden">Ryd afsluttede</button>
-            </div>
-            <section id="drinks-list" class="list drinks-scroll"></section>
-          </section>
-
-          <section class="card">
-            <h2 class="h2">Tilføj til drinkmenuen</h2>
-            <div class="inline-form">
-              <input id="menu-drink-name" class="input" placeholder="Navn på drinken" />
-            </div>
-            <div class="inline-form" style="margin-top:8px;">
-              <input id="menu-drink-desc" class="input" placeholder="Beskrivelse (valgfri)" />
-            </div>
-            <div class="inline-form" style="margin-top:8px;">
-              <input id="menu-drink-image" class="input" placeholder="Billede-link (valgfrit)" />
-              <button id="menu-drink-add-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-          </section>
-        </div>
-
-        <div id="tab-sounds" class="tab-panel hidden">
-          <section id="sound-grid" class="sound-grid"></section>
-
-          <section class="card">
-            <h2 class="h2">Tilføj en lyd</h2>
-            <p class="muted">Indsæt et link til en lydfil, eller upload en kort fil selv (helst under ~300 KB — I skal selv levere lydene).</p>
-            <div class="inline-form">
-              <input id="sound-label-input" class="input-small" placeholder="Navn (fx 'Sejrslyd')" />
-              <input id="sound-url-input" class="input" placeholder="Link til lydfil (valgfrit hvis du uploader)" />
-            </div>
-            <div class="inline-form" style="margin-top:8px;">
-              <input id="sound-file-input" type="file" accept="audio/*" class="input" />
-              <button id="sound-add-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-          </section>
-        </div>
-
-        <div id="tab-timer" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Stopur</h2>
-            <div id="stopwatch-display" class="timer-display">00:00.0</div>
-            <div class="timer-buttons">
-              <button id="stopwatch-startpause" class="primary-btn">Start</button>
-              <button id="stopwatch-lap" class="icon-btn">Lap</button>
-              <button id="stopwatch-reset" class="icon-btn">Nulstil</button>
-            </div>
-            <div id="stopwatch-laps" class="stopwatch-laps"></div>
-          </section>
-          <section class="card">
-            <h2 class="h2">Nedtælling / alarm</h2>
-            <div class="inline-form">
-              <input id="countdown-minutes-input" type="number" min="0" step="1" class="input-small" placeholder="Minutter" value="5" />
-              <button id="countdown-start-btn" class="primary-btn">Start</button>
-              <button id="countdown-stop-btn" class="icon-btn hidden">Stop</button>
-            </div>
-            <div id="countdown-display" class="timer-display"></div>
-          </section>
-        </div>
-
-        <div id="tab-speedtest" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">LAN-net speedtest 🚀</h2>
-            <p class="muted">Gimmick-test af download-hastighed og ping mod serveren — se hvem der har det bedste net.</p>
-            <button id="speedtest-run-btn" class="primary-btn">Kør test</button>
-            <div id="speedtest-status" class="muted small" style="margin-top:8px;"></div>
-          </section>
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Resultater</h2>
-              <button id="speedtest-reset-btn" class="link-btn">Nulstil</button>
-            </div>
-            <div id="speedtest-leaderboard" class="leaderboard"></div>
-          </section>
-        </div>
-
-        <div id="tab-aim" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Aim Trainer 🎯</h2>
-            <p class="muted">20 sekunder — ram så mange mål som muligt så hurtigt som muligt.</p>
-            <button id="aim-start-btn" class="primary-btn">Start</button>
-            <div id="aim-stats" class="muted small" style="margin-top:8px;"></div>
-          </section>
-          <div id="aim-arena" class="aim-arena hidden"></div>
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Highscores</h2>
-              <button id="aim-reset-btn" class="link-btn">Nulstil</button>
-            </div>
-            <div id="aim-leaderboard" class="leaderboard"></div>
-          </section>
-        </div>
-
-        <div id="tab-games" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Foreslå et spil</h2>
-            <div class="inline-form">
-              <input id="game-name-input" class="input" placeholder="Spilnavn" />
-              <button id="game-add-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-            <div class="inline-form" style="margin-top:8px;">
-              <input id="game-icon-input" class="input" placeholder="Link til ikon/cover (valgfrit)" />
-            </div>
-            <p class="muted small" style="margin-top:8px;">Træk spilkortene mellem kolonnerne for at sortere dem.</p>
-          </section>
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Kan ikke beslutte jer?</h2>
-              <button id="spin-game-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
-            </div>
-            <p class="muted small">Vælger tilfældigt blandt uspillede spil i "🆓 Har dem (gratis)" — marker et spil "✓ Spillet" for at udelukke det.</p>
-            <div id="game-wheel-result" class="wheel-result hidden"></div>
-          </section>
-          <div class="game-columns">
-            <div class="game-column" data-category="unsorted">
-              <h3 class="h3">🔀 Ikke sorteret</h3>
-              <div class="game-column-list" id="games-list-unsorted"></div>
-            </div>
-            <div class="game-column" data-category="free">
-              <h3 class="h3">🆓 Har dem (gratis)</h3>
-              <div class="game-column-list" id="games-list-free"></div>
-            </div>
-            <div class="game-column" data-category="paid">
-              <h3 class="h3">💰 Skal købes</h3>
-              <div class="game-column-list" id="games-list-paid"></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="tab-arena" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Arena 🎯</h2>
-            <p class="muted">WASD for at bevæge dig, mus for at sigte, klik/mellemrum for at skyde, <strong>Ctrl</strong> for at dashe. Første til X kills vinder runden.</p>
-            <p class="muted small">🧱 Gem dig bag kasserne · 🔫 shotgun · 🔥 maskingevær · ⚡ speed boost · 👻 usynlighed · 🛡️ skjold</p>
-            <p class="muted small">Tip: upload et billede af dig selv via 📷-ikonet øverst, så bruges det som din avatar i banen.</p>
-            <div id="arena-connect">
-              <button id="arena-join-btn" class="primary-btn">Deltag i kampen</button>
-            </div>
-            <div id="arena-controls" class="arena-controls-row hidden">
-              <input id="arena-target-kills" type="number" class="input-small" value="10" min="1" max="50" style="width:70px;" />
-              <button id="arena-start-btn" class="primary-btn">Start runde</button>
-              <span id="arena-status" class="muted small"></span>
-            </div>
-          </section>
-          <div id="arena-hud" class="arena-hud hidden"></div>
-          <div id="arena-wrap" class="arena-wrap hidden">
-            <canvas id="arena-canvas" width="800" height="500"></canvas>
-          </div>
-          <section class="card">
-            <h2 class="h2">Stilling (denne runde)</h2>
-            <div id="arena-scoreboard" class="leaderboard"></div>
-          </section>
-        </div>
-
-        <div id="tab-food" class="tab-panel hidden">
-          <section class="meal-columns">
-            <div class="meal-column" data-meal="snacks">
-              <h3 class="h3">Snacks</h3>
-              <div class="inline-form">
-                <input class="input meal-input" placeholder="Tilføj snack" data-meal="snacks" />
-                <button class="icon-btn meal-add-btn" data-meal="snacks">+</button>
-              </div>
-              <input class="input-small meal-image-input" placeholder="Billede-link (valgfrit)" data-meal="snacks" style="width:100%; margin-top:6px;" />
-              <div class="meal-list" id="meal-list-snacks"></div>
-            </div>
-            <div class="meal-column" data-meal="lunch">
-              <h3 class="h3">Frokost</h3>
-              <div class="inline-form">
-                <input class="input meal-input" placeholder="Tilføj til frokost" data-meal="lunch" />
-                <button class="icon-btn meal-add-btn" data-meal="lunch">+</button>
-              </div>
-              <input class="input-small meal-image-input" placeholder="Billede-link (valgfrit)" data-meal="lunch" style="width:100%; margin-top:6px;" />
-              <div class="meal-list" id="meal-list-lunch"></div>
-            </div>
-            <div class="meal-column" data-meal="dinner">
-              <h3 class="h3">Aftensmad</h3>
-              <div class="inline-form">
-                <input class="input meal-input" placeholder="Tilføj til aftensmad" data-meal="dinner" />
-                <button class="icon-btn meal-add-btn" data-meal="dinner">+</button>
-              </div>
-              <input class="input-small meal-image-input" placeholder="Billede-link (valgfrit)" data-meal="dinner" style="width:100%; margin-top:6px;" />
-              <div class="meal-list" id="meal-list-dinner"></div>
-            </div>
-          </section>
-        </div>
-
-        <div id="tab-shopping" class="tab-panel hidden">
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Indkøbsliste</h2>
-              <button id="shopping-uncheck-all-btn" class="link-btn">Ryd afkrydsninger</button>
-            </div>
-            <p class="muted">Genereres automatisk ud fra Mad og Drinks. Afkrydsninger deles mellem jer alle.</p>
-          </section>
-          <div id="shopping-list-sections"></div>
-          <section class="card">
-            <h2 class="h2">Andre indkøb</h2>
-            <p class="muted">Ting der ikke er en del af menuen (fx is, kopper, chips).</p>
-            <div class="inline-form">
-              <input id="shopping-extra-input" class="input" placeholder="Tilføj punkt" />
-              <button id="shopping-extra-add-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-          </section>
-        </div>
-
-        <div id="tab-points" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Registrér en sejr</h2>
-            <div class="inline-form">
-              <input id="point-game-input" class="input-small" placeholder="Spil" />
-              <select id="point-winner-select" class="select"></select>
-              <input id="point-amount-input" class="input-small" type="number" value="1" min="1" style="width:60px;" />
-              <button id="point-add-btn" class="primary-btn">Tilføj</button>
-            </div>
-          </section>
-          <section class="card">
-            <h2 class="h2">Stilling</h2>
-            <div id="leaderboard" class="leaderboard"></div>
-          </section>
-          <section id="points-log" class="list"></section>
-        </div>
-
-        <div id="tab-ourgame" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">🚀 Start spillet</h2>
-            <p class="muted">Kræver at du én gang har registreret genvejen på din egen computer — se README for opsætning. Virker herefter med ét klik, ligesom "Join Game"-knapper i Steam/Discord.</p>
-            <a id="game-launch-btn" href="#" class="primary-btn" style="display:inline-block; text-decoration:none; text-align:center;">🎮 Start LAN-spillet</a>
-            <p class="muted small" style="margin-top:8px;">Sker der ingenting når du klikker, er genvejen ikke sat op på denne computer endnu.</p>
-          </section>
-
-          <section class="card">
-            <h2 class="h2">💡 Forbedringsforslag</h2>
-            <p class="muted">Idéer og feedback til selve spillet — saml dem her på tværs af LAN'ene.</p>
-            <div class="inline-form">
-              <input id="feedback-input" class="input" placeholder="Fx 'Tilføj powerup til at gå igennem vægge'" />
-              <button id="feedback-add-btn" class="primary-btn">+ Tilføj</button>
-            </div>
-          </section>
-          <section id="feedback-list" class="list"></section>
-        </div>
-
-        <div id="tab-tournament" class="tab-panel hidden">
-          <section id="tournament-setup" class="card">
-            <h2 class="h2">Start en turnering</h2>
-            <div class="inline-form">
-              <input id="tournament-game-input" class="input" placeholder="Hvilket spil? (fx Valorant)" />
-            </div>
-            <div id="tournament-player-picker" class="chip-row" style="margin-top:10px;"></div>
-            <button id="tournament-start-btn" class="primary-btn" style="margin-top:10px;">🏆 Start turnering</button>
-            <p class="muted small" style="margin-top:8px;">Ulige antal spillere klares automatisk med en "bye" (fri runde videre).</p>
-          </section>
-          <section id="tournament-active" class="card hidden">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;" id="tournament-title">Turnering</h2>
-              <button id="tournament-reset-btn" class="link-btn">Afslut/nulstil</button>
-            </div>
-            <div id="tournament-bracket" class="bracket"></div>
-          </section>
-        </div>
-
-        <div id="tab-badges" class="tab-panel hidden">
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">🏅 Badges</h2>
-              <button id="badges-reset-btn" class="link-btn">Nulstil badges</button>
-            </div>
-            <p class="muted">Optjenes automatisk ud fra jeres aktivitet i appen — ingen manuel registrering nødvendig.</p>
-            <p id="badges-reset-note" class="muted small"></p>
-          </section>
-          <div id="badges-grid" class="badges-grid"></div>
-        </div>
-
-        <div id="tab-checklist" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">Din huskeliste</h2>
-            <p class="muted">Hver person har sin egen liste — I ser kun jeres eget flueben.</p>
-            <div id="checklist-items" class="checklist"></div>
-            <div class="inline-form" style="margin-top:12px;">
-              <input id="checklist-new-input" class="input" placeholder="Tilføj punkt til huskelisten" />
-              <button id="checklist-add-btn" class="icon-btn">+</button>
-            </div>
-          </section>
-        </div>
-
-        <div id="tab-spotify" class="tab-panel hidden">
-          <section class="card">
-            <h2 class="h2">🎶 Musikønsker</h2>
-            <p class="muted">Alle kan foreslå numre her, uanset om I selv er logget ind på Spotify. Den der styrer afspilningen kan sætte dem i Spotify-køen direkte.</p>
-            <div class="inline-form">
-              <input id="music-queue-input" class="input" placeholder='Sang - kunstner (fx "Sandstorm - Darude")' />
-              <button id="music-queue-add-btn" class="primary-btn">+ Foreslå</button>
-            </div>
-            <div id="music-queue-list" class="list" style="margin-top:12px;"></div>
-          </section>
-
-          <div id="spotify-login" class="card hidden">
-            <h2 class="h2">Forbind til Spotify</h2>
-            <p class="muted">Log ind med den Spotify-konto der styrer musikken på jeres højtaler. Kræver Spotify Premium for at kunne styre afspilning eksternt.</p>
-            <button id="spotify-login-btn" class="primary-btn">Forbind til Spotify</button>
-          </div>
-
-          <div id="spotify-connected" class="hidden">
-            <section class="card">
-              <div id="spotify-now-playing"></div>
-              <div id="spotify-controls" class="spotify-controls hidden">
-                <div class="spotify-transport">
-                  <button id="spotify-previous" class="icon-btn spotify-transport-btn">⏮</button>
-                  <button id="spotify-playpause" class="primary-btn spotify-transport-btn">▶</button>
-                  <button id="spotify-next" class="icon-btn spotify-transport-btn">⏭</button>
-                </div>
-                <div class="spotify-volume-row">
-                  <span class="muted small">🔉</span>
-                  <input id="spotify-volume" type="range" min="0" max="100" value="50" />
-                  <span class="muted small">🔊</span>
-                </div>
-              </div>
-            </section>
-            <section class="card">
-              <h2 class="h2">Enheder</h2>
-              <div id="spotify-devices" class="spotify-devices"></div>
-            </section>
-            <button id="spotify-logout-btn" class="link-btn">Log ud af Spotify</button>
-          </div>
-        </div>
-      </div>
-
-      <footer class="footer">Data deles mellem alle der har adgangskoden.</footer>
-    </div>
+<div class="sheet" id="addBoxPack">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Tilføj til pakkeliste</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="packItem" placeholder="Fx “Solcreme”" onkeydown="if(event.key==='Enter')addPackItem()" />
+    <button class="act" onclick="addPackItem()">Tilføj</button>
   </div>
+</div>
 
-  <script src="drink-recipes.js"></script>
-  <script src="app.js"></script>
-  <script src="aimtrainer.js"></script>
-  <script src="game-arena.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
+<div class="sheet" id="addBoxBudget">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="budgetSheetTitle">Tilføj udgift</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="budgetTitle" placeholder="Fx “Fly” eller “Budget i alt”" />
+    <div class="two">
+      <input id="budgetAmount" type="number" step="0.01" placeholder="Beløb (kr.)" />
+      <select id="budgetType">
+        <option value="udgift">Udgift</option>
+        <option value="budget">Samlet budget</option>
+      </select>
+    </div>
+    <button class="act" id="budgetSaveBtn" onclick="addBudget()">Tilføj</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxItin">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="itinSheetTitle">Tilføj til tidslinje</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="itinTitle" placeholder="Fx “Fly til Lissabon” eller “Check-in, Hotel Alfama”" />
+    <div class="two">
+      <input id="itinDate" type="date" />
+      <input id="itinTime" type="time" />
+    </div>
+    <select id="itinType">
+      <option value="fly">Fly</option>
+      <option value="hotel">Hotel</option>
+      <option value="aktivitet">Aktivitet</option>
+      <option value="andet">Andet</option>
+    </select>
+    <input id="itinAddress" placeholder="Adresse (valgfri)" />
+    <textarea id="itinNote" placeholder="Note (valgfri)" rows="2"></textarea>
+    <button class="act" id="itinSaveBtn" onclick="addItinerary()">Tilføj</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxMeal">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3 id="mealSheetTitle">Ret</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="mealDish" placeholder="Fx “Lasagne”" />
+    <textarea id="mealIngredients" placeholder="Ingredienser (ét pr. linje)" rows="4"></textarea>
+    <button class="act" onclick="saveMeal()">Gem</button>
+  </div>
+</div>
+
+<div class="sheet" id="addBoxShop">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Tilføj vare</h3><button class="icon-btn" style="background:var(--paper-dim);color:var(--ink);" onclick="closeSheet()">✕</button></div>
+  <div class="fields">
+    <input id="shopItem" placeholder="Fx “Havregryn”" onkeydown="if(event.key==='Enter')addShopItem()" />
+    <button class="act" onclick="addShopItem()">Tilføj</button>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let data = { priorities: [], dates: [], projects: [], shopping: [], vacations: [], vacationRequirements: [], manual: [], packing: [], budget: [], itinerary: [], mealPlan: {}, loftImage: null, loftZones: [], freezer: {}, fixedDates: [], vacationGroups: [] };
+let activeTab = 'priorities';
+let kiosk = false;
+let pollTimer = null;
+
+async function safeGet(key){
+  try{
+    const res = await fetch('/api/kv?key=' + encodeURIComponent(key));
+    if(!res.ok) return null;
+    const data = await res.json();
+    return data.value;
+  }catch(e){ console.error('kv get failed', key, e); return null; }
+}
+async function safeSet(key, value){
+  try{
+    const res = await fetch('/api/kv?key=' + encodeURIComponent(key), {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(value)
+    });
+    if(!res.ok){
+      let msg = '';
+      try{ const j = await res.json(); msg = j.error || ''; }catch(e){}
+      showToast('Kunne ikke gemme' + (msg ? ' (' + msg + ')' : '') + ' — henter seneste version igen');
+      refreshAll(false);
+      return false;
     }
-  </script>
-  <script src="spotify.js"></script>
-  <script src="timer.js"></script>
-</body>
-</html>
+    return true;
+  }catch(e){
+    console.error('kv set failed', key, e);
+    showToast('Ingen forbindelse — ændringen blev ikke gemt');
+    return false;
+  }
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+async function init(){
+  const name = localStorage.getItem('husraadet-name');
+  if(name){
+    currentUser = name;
+    enterApp();
+  }
+}
+
+function saveName(){
+  const v = document.getElementById('nameInput').value.trim();
+  if(!v) return;
+  currentUser = v;
+  localStorage.setItem('husraadet-name', v);
+  enterApp();
+}
+
+function switchUser(){
+  closeSheet();
+  document.getElementById('root').classList.remove('shown');
+  document.getElementById('gate').style.display = 'block';
+  document.getElementById('nameInput').value = currentUser || '';
+}
+
+async function enterApp(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('root').classList.add('shown');
+  document.getElementById('whoName').textContent = currentUser;
+  await refreshAll(false);
+  setTab('priorities');
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => refreshAll(false), 20000);
+}
+
+async function refreshAll(manual){
+  const [p, d, pr, sh, vc, kr, man, pk, bg, it, mp, li, lz, fz, fd, vg] = await Promise.all([
+    safeGet('priorities-list'),
+    safeGet('date-requests-list'),
+    safeGet('projects-list'),
+    safeGet('shopping-list'),
+    safeGet('vacations-list'),
+    safeGet('vacation-requirements-list'),
+    safeGet('house-manual-list'),
+    safeGet('packing-list'),
+    safeGet('budget-list'),
+    safeGet('itinerary-list'),
+    safeGet('meal-plan'),
+    safeGet('loft-image'),
+    safeGet('loft-zones'),
+    safeGet('freezer-drawers'),
+    safeGet('fixed-dates-list'),
+    safeGet('vacation-groups')
+  ]);
+  data.priorities = p || [];
+  data.dates = d || [];
+  data.projects = pr || [];
+  data.shopping = sh || [];
+  data.vacations = vc || [];
+  data.vacationRequirements = kr || [];
+  data.manual = man || [];
+  data.packing = pk || [];
+  data.budget = bg || [];
+  data.itinerary = it || [];
+  data.mealPlan = mp || {};
+  data.loftImage = li || null;
+  data.loftZones = lz || [];
+  data.freezer = fz || {};
+  data.fixedDates = fd || [];
+  data.vacationGroups = vg || [];
+  if(!data.vacationGroups.length){
+    data.vacationGroups = [
+      { id: 'grp-all-inclusive', name: 'All inclusive' },
+      { id: 'grp-no-inclusive', name: 'No inclusive' },
+      { id: 'grp-andet', name: 'Andet' }
+    ];
+    safeSet('vacation-groups', data.vacationGroups);
+  }
+  document.getElementById('lastSync').textContent = 'Sidst opdateret ' + new Date().toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  renderAll();
+}
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+const TAB_TITLES = {priorities:'Prioriteter', dates:'Datoer', projects:'Projekter', vacations:'Ferier', shopping:'Indkøb'};
+
+function setTab(t){
+  activeTab = t;
+  document.querySelectorAll('nav.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.querySelectorAll('section.panel').forEach(s => s.classList.toggle('active', s.id === 'panel-' + t));
+  document.getElementById('topbarTitle').textContent = TAB_TITLES[t] || 'Husrådet';
+  document.getElementById('fab').style.display = (t === 'vacations') ? 'none' : 'flex';
+  closeSheet();
+  document.getElementById('scrollArea').scrollTop = 0;
+}
+
+function setCount(id, n){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = n;
+  el.style.display = n > 0 ? 'flex' : 'none';
+}
+
+function openSheet(id){
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById(id).classList.add('open');
+  document.getElementById('backdrop').classList.add('show');
+}
+function closeSheet(){
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('backdrop').classList.remove('show');
+}
+function openUserMenu(){
+  refreshNotifButton();
+  openSheet('userMenuSheet');
+}
+function openSheetForActiveTab(){
+  if(activeTab === 'priorities') return openAddPriority();
+  if(activeTab === 'projects') return openAddProject();
+  const map = { dates:'addBoxDate', shopping:'addBoxShop' };
+  const id = map[activeTab];
+  if(id) openSheet(id);
+}
+
+function toggleKiosk(){
+  kiosk = !kiosk;
+  document.body.classList.toggle('kiosk', kiosk);
+  document.getElementById('kioskExit').style.display = kiosk ? 'inline-block' : 'none';
+  closeSheet();
+}
+
+/* ---------- Push notifications ---------- */
+const VAPID_PUBLIC_KEY = 'BGZLJ7c7VSWvOPqyqhupB2hjoDwoaoX5NVlckjOTt574ipLz-eikd3MoQR0IuX-TrqgKbZQOS6sBQ5C35VjfIpQ';
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for(let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function refreshNotifButton(){
+  const btn = document.getElementById('notifToggleBtn');
+  if(!btn) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    btn.textContent = 'Ikke understøttet';
+    btn.disabled = true;
+    return;
+  }
+  try{
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    btn.textContent = sub ? 'Slå fra' : 'Slå til';
+  }catch(e){
+    btn.textContent = 'Slå til';
+  }
+}
+
+async function toggleNotifications(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    showToast('Notifikationer understøttes ikke i denne browser');
+    return;
+  }
+  const reg = await navigator.serviceWorker.register('/sw.js');
+  const existing = await reg.pushManager.getSubscription();
+  if(existing){
+    try{
+      await fetch('/api/push-unsubscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint })
+      });
+      await existing.unsubscribe();
+      showToast('Notifikationer er slået fra');
+    }catch(e){
+      showToast('Kunne ikke slå notifikationer fra');
+    }
+    refreshNotifButton();
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if(perm !== 'granted'){
+    showToast('Notifikationer blev ikke tilladt i browseren');
+    return;
+  }
+  try{
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    const res = await fetch('/api/push-subscribe', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON(), user: currentUser })
+    });
+    if(!res.ok) throw new Error('subscribe failed');
+    showToast('Notifikationer er slået til');
+  }catch(e){
+    console.error(e);
+    showToast('Kunne ikke slå notifikationer til');
+  }
+  refreshNotifButton();
+}
+
+/* ---------- Priorities ---------- */
+let editingPrioId = null;
+function openAddPriority(){
+  editingPrioId = null;
+  document.getElementById('prioTitle').value = '';
+  document.getElementById('prioNote').value = '';
+  document.getElementById('prioSheetTitle').textContent = 'Tilføj punkt';
+  document.getElementById('prioSaveBtn').textContent = 'Tilføj til listen';
+  openSheet('addBoxPrio');
+}
+function editPriority(id){
+  const item = data.priorities.find(x => x.id === id);
+  if(!item) return;
+  editingPrioId = id;
+  document.getElementById('prioTitle').value = item.title || '';
+  document.getElementById('prioNote').value = item.note || '';
+  document.getElementById('prioSheetTitle').textContent = 'Rediger punkt';
+  document.getElementById('prioSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxPrio');
+}
+async function addPriority(){
+  const title = document.getElementById('prioTitle').value.trim();
+  if(!title) return;
+  const note = document.getElementById('prioNote').value.trim();
+  if(editingPrioId){
+    const item = data.priorities.find(x => x.id === editingPrioId);
+    if(item){ item.title = title; item.note = note; }
+    editingPrioId = null;
+  }else{
+    data.priorities.push({ id: uid(), title, note, addedBy: currentUser, addedAt: Date.now(), done: false });
+  }
+  await safeSet('priorities-list', data.priorities);
+  document.getElementById('prioTitle').value = '';
+  document.getElementById('prioNote').value = '';
+  renderPriorities();
+  closeSheet();
+}
+async function movePriority(id, dir){
+  const i = data.priorities.findIndex(x => x.id === id);
+  const j = i + dir;
+  if(j < 0 || j >= data.priorities.length) return;
+  [data.priorities[i], data.priorities[j]] = [data.priorities[j], data.priorities[i]];
+  await safeSet('priorities-list', data.priorities);
+  renderPriorities();
+}
+async function toggleDone(id){
+  const item = data.priorities.find(x => x.id === id);
+  item.done = !item.done;
+  await safeSet('priorities-list', data.priorities);
+  renderPriorities();
+}
+async function removePriority(id){
+  data.priorities = data.priorities.filter(x => x.id !== id);
+  await safeSet('priorities-list', data.priorities);
+  renderPriorities();
+}
+async function addPriorityFromProject(projectId){
+  const project = data.projects.find(x => x.id === projectId);
+  if(!project) return;
+  if(data.priorities.some(x => x.projectId === projectId)) return;
+  data.priorities.push({ id: uid(), title: project.title, note: project.note, addedBy: currentUser, addedAt: Date.now(), done: false, projectId });
+  await safeSet('priorities-list', data.priorities);
+  renderPriorities();
+  renderProjects();
+}
+function jumpToProject(projectId){
+  setTab('projects');
+  const el = document.getElementById('proj-' + projectId);
+  if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderPriorities(){
+  const wrap = document.getElementById('listPriorities');
+  setCount('cnt-priorities', data.priorities.filter(x=>!x.done).length);
+  if(!data.priorities.length){
+    wrap.innerHTML = '<div class="empty">Ingen punkter endnu — tilføj det første.</div>';
+    return;
+  }
+  wrap.innerHTML = data.priorities.map((item, idx) => `
+    <div class="card ${item.done ? 'done' : ''}">
+      <div class="rank">${idx+1}</div>
+      <div class="arrows no-kiosk">
+        <button onclick="movePriority('${item.id}',-1)">▲</button>
+        <button onclick="movePriority('${item.id}',1)">▼</button>
+      </div>
+      <div class="body">
+        <p class="title">${esc(item.title)}</p>
+        ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+        <p class="meta">tilføjet af ${esc(item.addedBy || 'ukendt')}${item.projectId ? ' · <a href="#" onclick="jumpToProject(\'' + item.projectId + '\');return false;" style="color:inherit;">fra projekter</a>' : ''}</p>
+        <div class="row no-kiosk">
+          <button class="act small" onclick="toggleDone('${item.id}')">${item.done ? 'Genåbn' : 'Marker som klaret'}</button>
+          <button class="act small" onclick="editPriority('${item.id}')">Rediger</button>
+          <button class="link" onclick="removePriority('${item.id}')">fjern</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ---------- Date requests ---------- */
+async function addDateRequest(){
+  const title = document.getElementById('dateTitle').value.trim();
+  const date = document.getElementById('dateDate').value;
+  if(!title || !date) return;
+  const time = document.getElementById('dateTime').value;
+  const note = document.getElementById('dateNote').value.trim();
+  data.dates.unshift({ id: uid(), title, date, time, note, proposedBy: currentUser, proposedAt: Date.now(), status: 'pending', respondedBy: null });
+  await safeSet('date-requests-list', data.dates);
+  document.getElementById('dateTitle').value = '';
+  document.getElementById('dateDate').value = '';
+  document.getElementById('dateTime').value = '';
+  document.getElementById('dateNote').value = '';
+  renderDates();
+  closeSheet();
+}
+async function respondDate(id, status){
+  const item = data.dates.find(x => x.id === id);
+  item.status = status;
+  item.respondedBy = currentUser;
+  item.respondedAt = Date.now();
+  await safeSet('date-requests-list', data.dates);
+  renderDates();
+}
+async function removeDate(id){
+  data.dates = data.dates.filter(x => x.id !== id);
+  await safeSet('date-requests-list', data.dates);
+  renderDates();
+}
+function downloadIcs(item){
+  const dt = (item.date || '').replace(/-/g,'');
+  let dtStart, dtEnd, allDay = !item.time;
+  if(allDay){
+    dtStart = dt;
+    const d = new Date(item.date); d.setDate(d.getDate()+1);
+    dtEnd = d.toISOString().slice(0,10).replace(/-/g,'');
+  }else{
+    const t = item.time.replace(':','') + '00';
+    dtStart = dt + 'T' + t;
+    const [h,m] = item.time.split(':').map(Number);
+    const endD = new Date(); endD.setHours(h+1,m,0,0);
+    dtEnd = dt + 'T' + String(h+1).padStart(2,'0') + String(m).padStart(2,'0') + '00';
+  }
+  const ics = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Husraadet//DA',
+    'BEGIN:VEVENT',
+    'UID:' + item.id + '@husraadet',
+    (allDay ? ('DTSTART;VALUE=DATE:' + dtStart + '\r\nDTEND;VALUE=DATE:' + dtEnd) : ('DTSTART:' + dtStart + '\r\nDTEND:' + dtEnd)),
+    'SUMMARY:' + (item.title||'').replace(/\n/g,' '),
+    item.note ? ('DESCRIPTION:' + item.note.replace(/\n/g,' ')) : '',
+    'END:VEVENT','END:VCALENDAR'
+  ].filter(Boolean).join('\r\n');
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (item.title || 'begivenhed').replace(/[^a-z0-9æøå]+/gi,'_') + '.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- Calendar status view ---------- */
+let calCursor = new Date(); calCursor.setDate(1);
+function calMonthShift(n){
+  calCursor.setMonth(calCursor.getMonth() + n);
+  renderCalendar();
+}
+function isoWeekNumber(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // Monday = 0
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  return 1 + Math.round((d - firstThursday) / (7 * 86400000));
+}
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  const title = document.getElementById('calTitle');
+  const year = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  title.textContent = calCursor.toLocaleDateString('da-DK', {month:'long', year:'numeric'});
+
+  const byDate = {};
+  const mark = (dateStr, kind) => {
+    byDate[dateStr] = byDate[dateStr] || { approved:false, pending:false, fixed:false };
+    byDate[dateStr][kind] = true;
+  };
+  for(const d of data.dates){
+    if(!d.date) continue;
+    if(d.status === 'approved') mark(d.date, 'approved');
+    if(d.status === 'pending') mark(d.date, 'pending');
+  }
+  for(const f of data.fixedDates){
+    if(!f.date) continue;
+    if(f.recurring){
+      const [, mo, da] = f.date.split('-');
+      mark(year + '-' + mo + '-' + da, 'fixed');
+    }else{
+      mark(f.date, 'fixed');
+    }
+  }
+
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-first
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  const dow = ['Ma','Ti','On','To','Fr','Lø','Sø'];
+  let html = '<div class="cal-wnum"></div>' + dow.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  let dayCounter = 1 - startOffset;
+  const totalCells = startOffset + daysInMonth;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  const totalRows = Math.ceil((totalCells + trailing) / 7);
+
+  for(let row = 0; row < totalRows; row++){
+    const mondayOfRow = new Date(year, month, dayCounter);
+    html += `<div class="cal-wnum">${isoWeekNumber(mondayOfRow)}</div>`;
+    for(let col = 0; col < 7; col++){
+      const inMonth = dayCounter >= 1 && dayCounter <= daysInMonth;
+      let label, dateStr = null;
+      if(dayCounter < 1){
+        label = daysInPrevMonth + dayCounter;
+      }else if(dayCounter > daysInMonth){
+        label = dayCounter - daysInMonth;
+      }else{
+        label = dayCounter;
+        dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(dayCounter).padStart(2,'0');
+      }
+      const info = dateStr ? byDate[dateStr] : null;
+      const cls = ['cal-day'];
+      if(!inMonth) cls.push('other');
+      if(dateStr === todayStr) cls.push('today');
+      const dots = info ? [
+        info.approved ? '<i class="approved"></i>' : '',
+        info.pending ? '<i class="pending"></i>' : '',
+        info.fixed ? '<i class="fixed"></i>' : ''
+      ].join('') : '';
+      html += `<div class="${cls.join(' ')}">${label}${dots ? `<span class="dots">${dots}</span>` : ''}</div>`;
+      dayCounter++;
+    }
+  }
+  grid.innerHTML = html;
+}
+
+/* ---------- Fixed (important) dates ---------- */
+let editingFixedId = null;
+function openAddFixedDate(){
+  editingFixedId = null;
+  ['fixedTitle','fixedDate','fixedTime','fixedNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fixedRecurring').checked = false;
+  document.getElementById('fixedSheetTitle').textContent = 'Vigtig dato';
+  document.getElementById('fixedSaveBtn').textContent = 'Gem';
+  openSheet('addBoxFixedDate');
+}
+function editFixedDate(id){
+  const item = data.fixedDates.find(x => x.id === id);
+  if(!item) return;
+  editingFixedId = id;
+  document.getElementById('fixedTitle').value = item.title || '';
+  document.getElementById('fixedDate').value = item.date || '';
+  document.getElementById('fixedTime').value = item.time || '';
+  document.getElementById('fixedNote').value = item.note || '';
+  document.getElementById('fixedRecurring').checked = !!item.recurring;
+  document.getElementById('fixedSheetTitle').textContent = 'Rediger';
+  document.getElementById('fixedSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxFixedDate');
+}
+async function addFixedDate(){
+  const title = document.getElementById('fixedTitle').value.trim();
+  const date = document.getElementById('fixedDate').value;
+  if(!title || !date) return;
+  const time = document.getElementById('fixedTime').value;
+  const note = document.getElementById('fixedNote').value.trim();
+  const recurring = document.getElementById('fixedRecurring').checked;
+  if(editingFixedId){
+    const item = data.fixedDates.find(x => x.id === editingFixedId);
+    if(item) Object.assign(item, { title, date, time, note, recurring });
+    editingFixedId = null;
+  }else{
+    data.fixedDates.push({ id: uid(), title, date, time, note, recurring, addedBy: currentUser, addedAt: Date.now() });
+  }
+  await safeSet('fixed-dates-list', data.fixedDates);
+  renderFixedDates();
+  renderCalendar();
+  closeSheet();
+}
+async function removeFixedDate(id){
+  data.fixedDates = data.fixedDates.filter(x => x.id !== id);
+  await safeSet('fixed-dates-list', data.fixedDates);
+  renderFixedDates();
+  renderCalendar();
+}
+function renderFixedDates(){
+  const wrap = document.getElementById('listFixedDates');
+  if(!data.fixedDates.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen vigtige datoer endnu.</div>';
+    return;
+  }
+  const sorted = [...data.fixedDates].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  wrap.innerHTML = sorted.map(item => `
+    <div class="card">
+      <p class="title">${esc(item.title)}${item.recurring ? ' <span class="pill">årligt</span>' : ''}</p>
+      <p class="meta">${item.date ? new Date(item.date+'T00:00').toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'long'}) : ''}${item.time ? ' · ' + item.time : ''} · tilføjet af ${esc(item.addedBy||'ukendt')}</p>
+      ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+      <div class="row no-kiosk">
+        <button class="act small" onclick="editFixedDate('${item.id}')">Rediger</button>
+        <button class="link" onclick="removeFixedDate('${item.id}')">fjern</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDates(){
+  const wrap = document.getElementById('listDates');
+  renderCalendar();
+  renderFixedDates();
+  setCount('cnt-dates', data.dates.filter(x=>x.status==='pending').length);
+  if(!data.dates.length){
+    wrap.innerHTML = '<div class="empty">Ingen datoer til godkendelse endnu.</div>';
+    return;
+  }
+  wrap.innerHTML = data.dates.map(item => {
+    const dateLabel = item.date ? new Date(item.date + 'T00:00').toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'long'}) : '';
+    const stamp = item.status === 'approved' ? '<div class="stamp approved">Godkendt</div>'
+      : item.status === 'declined' ? '<div class="stamp declined">Afvist</div>' : '';
+    const canRespond = item.status === 'pending' && item.proposedBy !== currentUser;
+    const waiting = item.status === 'pending' && item.proposedBy === currentUser;
+    return `
+    <div class="card">
+      ${stamp}
+      <p class="title">${esc(item.title)}</p>
+      <p class="meta">${dateLabel}${item.time ? ' · ' + item.time : ' · hele dagen'} · foreslået af ${esc(item.proposedBy || 'ukendt')}</p>
+      ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+      <div class="row no-kiosk">
+        ${canRespond ? `<button class="act approve" onclick="respondDate('${item.id}','approved')">Godkend</button>
+                        <button class="act decline" onclick="respondDate('${item.id}','declined')">Afvis</button>` : ''}
+        ${waiting ? `<span class="pill mustard">Venter på svar</span>` : ''}
+        ${item.status === 'approved' ? `<button class="act small" onclick='downloadIcs(${JSON.stringify(item)})'>Hent .ics til kalender</button>` : ''}
+        <button class="link" onclick="removeDate('${item.id}')">fjern</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Projects ---------- */
+let editingProjId = null;
+let projectView = 'board';
+const WEIGHT_LABEL = { hoej:'Høj', mellem:'Mellem', lav:'Lav' };
+const WEIGHT_ORDER = { hoej:0, mellem:1, lav:2 };
+
+function openAddProject(){
+  editingProjId = null;
+  document.getElementById('projTitle').value = '';
+  document.getElementById('projNote').value = '';
+  document.getElementById('projDate').value = '';
+  document.getElementById('projType').value = 'faelles';
+  document.getElementById('projWeight').value = 'mellem';
+  document.getElementById('projSheetTitle').textContent = 'Nyt projekt';
+  document.getElementById('projSaveBtn').textContent = 'Opret projekt';
+  openSheet('addBoxProj');
+}
+function editProject(id){
+  const item = data.projects.find(x => x.id === id);
+  if(!item) return;
+  editingProjId = id;
+  document.getElementById('projTitle').value = item.title || '';
+  document.getElementById('projNote').value = item.note || '';
+  document.getElementById('projDate').value = item.scheduledDate || '';
+  document.getElementById('projType').value = item.type || 'faelles';
+  document.getElementById('projWeight').value = item.weight || 'mellem';
+  document.getElementById('projSheetTitle').textContent = 'Rediger projekt';
+  document.getElementById('projSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxProj');
+}
+async function addProject(){
+  const title = document.getElementById('projTitle').value.trim();
+  if(!title) return;
+  const note = document.getElementById('projNote').value.trim();
+  const type = document.getElementById('projType').value;
+  const date = document.getElementById('projDate').value;
+  const weight = document.getElementById('projWeight').value;
+  if(editingProjId){
+    const item = data.projects.find(x => x.id === editingProjId);
+    if(item){ item.title = title; item.note = note; item.type = type; item.scheduledDate = date; item.weight = weight; }
+    editingProjId = null;
+  }else{
+    data.projects.unshift({ id: uid(), title, note, type, weight, scheduledDate: date, assignee: type === 'individuel' ? currentUser : null, status: 'ikke-startet', createdBy: currentUser, createdAt: Date.now() });
+  }
+  await safeSet('projects-list', data.projects);
+  document.getElementById('projTitle').value = '';
+  document.getElementById('projNote').value = '';
+  document.getElementById('projDate').value = '';
+  renderProjects();
+  closeSheet();
+}
+async function claimProject(id){
+  const item = data.projects.find(x => x.id === id);
+  item.assignee = currentUser;
+  await safeSet('projects-list', data.projects);
+  renderProjects();
+}
+async function releaseProject(id){
+  const item = data.projects.find(x => x.id === id);
+  item.assignee = null;
+  await safeSet('projects-list', data.projects);
+  renderProjects();
+}
+async function setProjectStatus(id, status){
+  const item = data.projects.find(x => x.id === id);
+  item.status = status;
+  await safeSet('projects-list', data.projects);
+  renderProjects();
+}
+async function setProjectDate(id, date){
+  const item = data.projects.find(x => x.id === id);
+  item.scheduledDate = date;
+  await safeSet('projects-list', data.projects);
+}
+async function removeProject(id){
+  data.projects = data.projects.filter(x => x.id !== id);
+  await safeSet('projects-list', data.projects);
+  renderProjects();
+}
+function setProjectView(v){
+  projectView = v;
+  document.getElementById('viewToggleBoard').classList.toggle('active', v === 'board');
+  document.getElementById('viewToggleList').classList.toggle('active', v === 'list');
+  document.getElementById('boardProjects').style.display = v === 'board' ? 'flex' : 'none';
+  document.getElementById('listProjects').style.display = v === 'list' ? 'block' : 'none';
+}
+
+const STATUS_LABEL = {'ikke-startet':'Ikke startet','i-gang':'I gang','faerdig':'Færdig'};
+const STATUS_ORDER = ['ikke-startet','i-gang','faerdig'];
+
+function projectCardInner(item, onPrioList){
+  return `
+      <p class="title">${esc(item.title)}</p>
+      <p class="meta">${item.type === 'faelles' ? 'Fælles projekt' : 'Individuel opgave'} · oprettet af ${esc(item.createdBy||'ukendt')}</p>
+      ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+      <div class="row">
+        <span class="weight-pill weight-${item.weight||'mellem'}">${WEIGHT_LABEL[item.weight||'mellem']}</span>
+        ${item.assignee ? `<span class="assignee-badge">${esc(item.assignee)}</span>` : `<span class="pill mustard">Ledig</span>`}
+        ${item.scheduledDate ? `<span class="pill">${new Date(item.scheduledDate+'T00:00').toLocaleDateString('da-DK',{day:'numeric',month:'short'})}</span>` : ''}
+        ${onPrioList ? `<span class="pill sage">På prioriteringslisten</span>` : ''}
+      </div>`;
+}
+
+function renderProjects(){
+  setCount('cnt-projects', data.projects.filter(x=>x.status!=='faerdig').length);
+  renderManual();
+  renderProjectsBoard();
+  renderProjectsList();
+}
+
+function renderProjectsBoard(){
+  const wrap = document.getElementById('boardProjects');
+  if(!data.projects.length){
+    wrap.innerHTML = '<div class="empty">Ingen opgaver endnu — opret den første.</div>';
+    return;
+  }
+  const sorted = [...data.projects].sort((a,b) => (WEIGHT_ORDER[a.weight||'mellem'] - WEIGHT_ORDER[b.weight||'mellem']));
+  wrap.innerHTML = STATUS_ORDER.map(status => {
+    const items = sorted.filter(x => x.status === status);
+    const colIdx = STATUS_ORDER.indexOf(status);
+    return `
+    <div class="board-col">
+      <h4>${status==='ikke-startet'?'To Do':status==='i-gang'?'I gang':'Done'} <span class="n">${items.length}</span></h4>
+      ${items.length ? items.map(item => {
+        const onPrioList = data.priorities.some(x => x.projectId === item.id);
+        return `
+        <div class="board-card" id="proj-${item.id}">
+          ${projectCardInner(item, onPrioList)}
+          <div class="row no-kiosk">
+            <div class="move-btns">
+              ${colIdx > 0 ? `<button onclick="setProjectStatus('${item.id}','${STATUS_ORDER[colIdx-1]}')">←</button>` : ''}
+              ${colIdx < STATUS_ORDER.length-1 ? `<button onclick="setProjectStatus('${item.id}','${STATUS_ORDER[colIdx+1]}')">→</button>` : ''}
+            </div>
+            ${!item.assignee ? `<button class="act small" onclick="claimProject('${item.id}')">Meld dig på</button>` : ''}
+            ${item.assignee === currentUser ? `<button class="act small" onclick="releaseProject('${item.id}')">Frigiv</button>` : ''}
+            <button class="act small" onclick="editProject('${item.id}')">Rediger</button>
+            ${!onPrioList ? `<button class="act small" onclick="addPriorityFromProject('${item.id}')">Prioritér</button>` : ''}
+            <button class="link" onclick="removeProject('${item.id}')">fjern</button>
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty-mini">Tomt</div>`}
+    </div>`;
+  }).join('');
+}
+
+function renderProjectsList(){
+  const wrap = document.getElementById('listProjects');
+  if(!data.projects.length){
+    wrap.innerHTML = '<div class="empty">Ingen projekter endnu — opret det første.</div>';
+    return;
+  }
+  wrap.innerHTML = data.projects.map(item => {
+    const onPrioList = data.priorities.some(x => x.projectId === item.id);
+    return `
+    <div class="card" id="proj-list-${item.id}">
+      ${projectCardInner(item, onPrioList)}
+      <div class="row no-kiosk">
+        ${!item.assignee ? `<button class="act small" onclick="claimProject('${item.id}')">Meld dig på</button>` : ''}
+        ${item.assignee === currentUser ? `<button class="act small" onclick="releaseProject('${item.id}')">Frigiv</button>` : ''}
+        <button class="act small" onclick="editProject('${item.id}')">Rediger</button>
+        <select onchange="setProjectStatus('${item.id}', this.value)">
+          ${Object.entries(STATUS_LABEL).map(([k,v]) => `<option value="${k}" ${item.status===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <input type="date" value="${item.scheduledDate||''}" onchange="setProjectDate('${item.id}', this.value)" style="width:auto;padding:5px 7px;font-size:12px;" />
+        ${!onPrioList ? `<button class="act small" onclick="addPriorityFromProject('${item.id}')">Send til prioritering</button>` : ''}
+        <button class="link" onclick="removeProject('${item.id}')">fjern</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+/* ---------- House manual ---------- */
+let editingManualId = null;
+function openAddManual(){
+  editingManualId = null;
+  document.getElementById('manualLabel').value = '';
+  document.getElementById('manualValue').value = '';
+  document.getElementById('manualNote').value = '';
+  document.getElementById('manualSheetTitle').textContent = 'Tilføj til manual';
+  document.getElementById('manualSaveBtn').textContent = 'Gem';
+  openSheet('addBoxManual');
+}
+function editManual(id){
+  const item = data.manual.find(x => x.id === id);
+  if(!item) return;
+  editingManualId = id;
+  document.getElementById('manualLabel').value = item.label || '';
+  document.getElementById('manualValue').value = item.value || '';
+  document.getElementById('manualNote').value = item.note || '';
+  document.getElementById('manualSheetTitle').textContent = 'Rediger';
+  document.getElementById('manualSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxManual');
+}
+async function addManual(){
+  const label = document.getElementById('manualLabel').value.trim();
+  if(!label) return;
+  const value = document.getElementById('manualValue').value.trim();
+  const note = document.getElementById('manualNote').value.trim();
+  if(editingManualId){
+    const item = data.manual.find(x => x.id === editingManualId);
+    if(item){ item.label = label; item.value = value; item.note = note; }
+    editingManualId = null;
+  }else{
+    data.manual.push({ id: uid(), label, value, note, addedBy: currentUser, addedAt: Date.now() });
+  }
+  await safeSet('house-manual-list', data.manual);
+  renderManual();
+  closeSheet();
+}
+async function removeManual(id){
+  data.manual = data.manual.filter(x => x.id !== id);
+  await safeSet('house-manual-list', data.manual);
+  renderManual();
+}
+function renderManual(){
+  const wrap = document.getElementById('listManual');
+  if(!data.manual.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen opslag endnu — fx wifi-kode eller serienumre.</div>';
+    return;
+  }
+  wrap.innerHTML = data.manual.map(item => `
+    <div class="shop-row" style="align-items:flex-start;">
+      <span class="item"><b>${esc(item.label)}:</b> ${esc(item.value)}${item.note ? `<br><span class="meta">${esc(item.note)}</span>` : ''}</span>
+      <button class="link no-kiosk" onclick="editManual('${item.id}')">rediger</button>
+      <button class="link no-kiosk" onclick="removeManual('${item.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+
+/* ---------- Shopping list ---------- */
+async function addShopItem(){
+  const el = document.getElementById('shopItem');
+  const name = el.value.trim();
+  if(!name) return;
+  data.shopping.push({ id: uid(), name, addedBy: currentUser, addedAt: Date.now(), checked: false });
+  await safeSet('shopping-list', data.shopping);
+  el.value = '';
+  el.focus();
+  renderShopping();
+}
+async function toggleShopItem(id){
+  const item = data.shopping.find(x => x.id === id);
+  item.checked = !item.checked;
+  await safeSet('shopping-list', data.shopping);
+  renderShopping();
+}
+async function removeShopItem(id){
+  data.shopping = data.shopping.filter(x => x.id !== id);
+  await safeSet('shopping-list', data.shopping);
+  renderShopping();
+}
+async function clearCheckedShop(){
+  data.shopping = data.shopping.filter(x => !x.checked);
+  await safeSet('shopping-list', data.shopping);
+  renderShopping();
+}
+function renderShopping(){
+  const wrap = document.getElementById('listShopping');
+  const unchecked = data.shopping.filter(x => !x.checked).length;
+  setCount('cnt-shopping', unchecked);
+  if(!data.shopping.length){
+    wrap.innerHTML = '<div class="empty">Indkøbslisten er tom.</div>';
+    return;
+  }
+  const sorted = [...data.shopping].sort((a,b) => (a.checked === b.checked) ? 0 : (a.checked ? 1 : -1));
+  const hasChecked = data.shopping.some(x => x.checked);
+  wrap.innerHTML = (hasChecked ? `<div class="shop-toolbar no-kiosk"><button class="link" onclick="clearCheckedShop()">ryd afkrydsede</button></div>` : '')
+    + sorted.map(item => `
+    <div class="shop-row ${item.checked ? 'checked' : ''}">
+      <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShopItem('${item.id}')" />
+      <span class="item">${esc(item.name)}</span>
+      <span class="meta no-kiosk">${esc(item.addedBy||'')}</span>
+      <button class="link no-kiosk" onclick="removeShopItem('${item.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+
+/* ---------- Vacation requirements ("krav") ---------- */
+const KRAV_TYPES = {temperatur:'Temperatur', rejseform:'Rejseform', periode:'Ferieperiode', andet:'Andet ønske'};
+
+async function addKrav(){
+  const type = document.getElementById('kravType').value;
+  const value = document.getElementById('kravValue').value.trim();
+  if(!value) return;
+  data.vacationRequirements.push({ id: uid(), type, value, addedBy: currentUser, addedAt: Date.now() });
+  await safeSet('vacation-requirements-list', data.vacationRequirements);
+  document.getElementById('kravValue').value = '';
+  renderKrav();
+}
+async function removeKrav(id){
+  data.vacationRequirements = data.vacationRequirements.filter(x => x.id !== id);
+  await safeSet('vacation-requirements-list', data.vacationRequirements);
+  renderKrav();
+}
+function renderKrav(){
+  const wrap = document.getElementById('listKrav');
+  wrap.innerHTML = Object.entries(KRAV_TYPES).map(([type, label]) => {
+    const items = data.vacationRequirements.filter(x => x.type === type);
+    return `
+    <div class="krav-group">
+      <h4>${label}</h4>
+      ${items.length ? items.map(item => `
+        <div class="shop-row">
+          <span class="item"><b>${esc(item.addedBy||'ukendt')}s krav:</b> ${esc(item.value)}</span>
+          <button class="link no-kiosk" onclick="removeKrav('${item.id}')">fjern</button>
+        </div>
+      `).join('') : `<div class="empty-mini">Ingen ${label.toLowerCase()}-krav endnu.</div>`}
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Vacation ideas ---------- */
+let editingVacId = null;
+let activeVacGroup = null; // null = "Alle"
+
+function defaultGroupId(){
+  return data.vacationGroups[0] ? data.vacationGroups[0].id : null;
+}
+function groupName(id){
+  const g = data.vacationGroups.find(x => x.id === id);
+  return g ? g.name : '';
+}
+function populateVacGroupSelect(selectedId){
+  const sel = document.getElementById('vacGroup');
+  sel.innerHTML = data.vacationGroups.map(g => `<option value="${g.id}" ${g.id===selectedId?'selected':''}>${esc(g.name)}</option>`).join('');
+}
+function openAddVacation(){
+  editingVacId = null;
+  document.getElementById('vacTitle').value = '';
+  document.getElementById('vacPrice').value = '';
+  document.getElementById('vacNote').value = '';
+  document.getElementById('vacLinks').value = '';
+  populateVacGroupSelect(activeVacGroup || defaultGroupId());
+  document.getElementById('vacSheetTitle').textContent = 'Ny idé';
+  document.getElementById('vacSaveBtn').textContent = 'Tilføj forslag';
+  openSheet('addBoxVac');
+}
+function editVacation(id){
+  const item = data.vacations.find(x => x.id === id);
+  if(!item) return;
+  editingVacId = id;
+  document.getElementById('vacTitle').value = item.title || '';
+  document.getElementById('vacPrice').value = item.price || '';
+  document.getElementById('vacNote').value = item.note || '';
+  document.getElementById('vacLinks').value = (item.links || []).join('\n');
+  populateVacGroupSelect(item.groupId || defaultGroupId());
+  document.getElementById('vacSheetTitle').textContent = 'Rediger idé';
+  document.getElementById('vacSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxVac');
+}
+async function addVacation(){
+  const title = document.getElementById('vacTitle').value.trim();
+  if(!title) return;
+  const groupId = document.getElementById('vacGroup').value;
+  const price = document.getElementById('vacPrice').value.trim();
+  const note = document.getElementById('vacNote').value.trim();
+  const links = document.getElementById('vacLinks').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if(editingVacId){
+    const item = data.vacations.find(x => x.id === editingVacId);
+    if(item){ item.title = title; item.groupId = groupId; item.price = price; item.note = note; item.links = links; }
+    editingVacId = null;
+  }else{
+    data.vacations.unshift({ id: uid(), title, groupId, price, note, links, favoritedBy: [], addedBy: currentUser, addedAt: Date.now() });
+  }
+  await safeSet('vacations-list', data.vacations);
+  ['vacTitle','vacPrice','vacNote','vacLinks'].forEach(id => document.getElementById(id).value = '');
+  renderVacations();
+  closeSheet();
+}
+async function toggleFavoriteVacation(id){
+  const item = data.vacations.find(x => x.id === id);
+  item.favoritedBy = item.favoritedBy || [];
+  const i = item.favoritedBy.indexOf(currentUser);
+  if(i === -1) item.favoritedBy.push(currentUser); else item.favoritedBy.splice(i,1);
+  await safeSet('vacations-list', data.vacations);
+  renderVacations();
+}
+async function removeVacation(id){
+  data.vacations = data.vacations.filter(x => x.id !== id);
+  await safeSet('vacations-list', data.vacations);
+  renderVacations();
+}
+function setVacGroup(id){
+  activeVacGroup = id;
+  renderVacGroupTabs();
+  renderVacations();
+}
+function renderVacGroupTabs(){
+  const wrap = document.getElementById('vacGroupTabs');
+  const tabs = [{ id: null, name: 'Alle' }, ...data.vacationGroups];
+  wrap.innerHTML = tabs.map(g => `<button class="${activeVacGroup===g.id?'active':''}" onclick="setVacGroup(${g.id ? `'${g.id}'` : 'null'})">${esc(g.name)}</button>`).join('');
+}
+
+/* ---- group management ---- */
+function openManageGroups(){
+  renderGroupsEditList();
+  document.getElementById('newGroupName').value = '';
+  openSheet('manageGroupsSheet');
+}
+function renderGroupsEditList(){
+  const wrap = document.getElementById('groupsEditList');
+  wrap.innerHTML = data.vacationGroups.map(g => `
+    <div class="group-edit-row">
+      <input value="${esc(g.name)}" onchange="renameGroup('${g.id}', this.value)" />
+      ${data.vacationGroups.length > 1 ? `<button class="ghost-btn" onclick="deleteGroup('${g.id}')">Slet</button>` : ''}
+    </div>
+  `).join('');
+}
+async function renameGroup(id, name){
+  name = name.trim();
+  if(!name) return;
+  const g = data.vacationGroups.find(x => x.id === id);
+  if(g) g.name = name;
+  await safeSet('vacation-groups', data.vacationGroups);
+  renderVacGroupTabs();
+  renderVacations();
+}
+async function addGroup(){
+  const input = document.getElementById('newGroupName');
+  const name = input.value.trim();
+  if(!name) return;
+  data.vacationGroups.push({ id: uid(), name });
+  await safeSet('vacation-groups', data.vacationGroups);
+  input.value = '';
+  renderGroupsEditList();
+  renderVacGroupTabs();
+}
+async function deleteGroup(id){
+  if(data.vacationGroups.length <= 1) return;
+  data.vacationGroups = data.vacationGroups.filter(x => x.id !== id);
+  const fallback = defaultGroupId();
+  data.vacations.forEach(v => { if(v.groupId === id) v.groupId = fallback; });
+  await safeSet('vacation-groups', data.vacationGroups);
+  await safeSet('vacations-list', data.vacations);
+  if(activeVacGroup === id) activeVacGroup = null;
+  renderGroupsEditList();
+  renderVacGroupTabs();
+  renderVacations();
+}
+
+function renderVacations(){
+  renderVacGroupTabs();
+  const wrap = document.getElementById('listVacations');
+  setCount('cnt-vacations', data.vacations.length);
+  const items = activeVacGroup === null
+    ? data.vacations
+    : data.vacations.filter(v => (v.groupId || defaultGroupId()) === activeVacGroup);
+  if(!items.length){
+    wrap.innerHTML = `<div class="empty">${data.vacations.length ? 'Ingen idéer i denne gruppe endnu.' : 'Ingen ferieforslag endnu — smid det første idé ind.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = items.map(item => {
+    const liked = (item.favoritedBy||[]).includes(currentUser);
+    const gName = groupName(item.groupId || defaultGroupId());
+    return `
+    <div class="card">
+      <p class="title">${esc(item.title)}</p>
+      <p class="meta">${esc(item.addedBy||'ukendt')}${item.price ? ' · ca. ' + esc(item.price) : ''}${gName ? ' · ' + esc(gName) : ''}</p>
+      ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+      ${(item.links && item.links.length) ? `<div class="row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:8px;">${item.links.map(l => `<a href="${esc(l)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--pine);word-break:break-all;">${esc(l)}</a>`).join('')}</div>` : ''}
+      <div class="row no-kiosk">
+        <button class="act small ${liked ? 'approve' : ''}" onclick="toggleFavoriteVacation('${item.id}')">${liked ? '♥ Favorit' : '♡ Favorit'} ${(item.favoritedBy||[]).length ? '(' + item.favoritedBy.length + ')' : ''}</button>
+        <button class="act small" onclick="editVacation('${item.id}')">Rediger</button>
+        <button class="link" onclick="removeVacation('${item.id}')">fjern</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderPriorities(); renderDates(); renderProjects(); renderShopping();
+  renderVacations(); renderKrav(); renderPacking(); renderBudget();
+  renderItinerary(); renderMealPlan(); renderLoft(); renderFreezer();
+}
+
+/* ---------- Loft (attic map) ---------- */
+let loftZoneMode = false;
+let pendingZoneX = null, pendingZoneY = null;
+let activeZoneId = null;
+
+function handleLoftImageUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1000;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      saveLoftImage(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function saveLoftImage(dataUrl){
+  data.loftImage = dataUrl;
+  await safeSet('loft-image', dataUrl);
+  renderLoft();
+}
+async function removeLoftImage(){
+  data.loftImage = null;
+  data.loftZones = [];
+  await safeSet('loft-image', null);
+  await safeSet('loft-zones', data.loftZones);
+  renderLoft();
+}
+function toggleLoftZoneMode(){
+  loftZoneMode = !loftZoneMode;
+  renderLoft();
+}
+function handleLoftImageClick(event){
+  if(!loftZoneMode) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  pendingZoneX = ((event.clientX - rect.left) / rect.width) * 100;
+  pendingZoneY = ((event.clientY - rect.top) / rect.height) * 100;
+  document.getElementById('zoneNameInput').value = '';
+  openSheet('addBoxZoneName');
+}
+async function saveNewZone(){
+  const label = document.getElementById('zoneNameInput').value.trim();
+  if(!label || pendingZoneX === null) return;
+  data.loftZones.push({ id: uid(), x: pendingZoneX, y: pendingZoneY, label, items: [] });
+  await safeSet('loft-zones', data.loftZones);
+  pendingZoneX = null; pendingZoneY = null;
+  loftZoneMode = false;
+  renderLoft();
+  closeSheet();
+}
+function openZoneDetail(id){
+  activeZoneId = id;
+  const zone = data.loftZones.find(z => z.id === id);
+  if(!zone) return;
+  document.getElementById('zoneDetailTitle').textContent = zone.label;
+  document.getElementById('zoneRenameInput').value = zone.label;
+  document.getElementById('zoneItemInput').value = '';
+  renderZoneItems();
+  openSheet('zoneDetailSheet');
+}
+function renderZoneItems(){
+  const zone = data.loftZones.find(z => z.id === activeZoneId);
+  const wrap = document.getElementById('zoneItemsList');
+  if(!zone || !zone.items.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen ting registreret i dette område endnu.</div>';
+    return;
+  }
+  wrap.innerHTML = zone.items.map(it => `
+    <div class="zone-item-row">
+      <span>${esc(it.name)}</span>
+      <button class="link no-kiosk" onclick="removeZoneItem('${it.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+async function addZoneItem(){
+  const input = document.getElementById('zoneItemInput');
+  const name = input.value.trim();
+  if(!name) return;
+  const zone = data.loftZones.find(z => z.id === activeZoneId);
+  if(!zone) return;
+  zone.items.push({ id: uid(), name });
+  await safeSet('loft-zones', data.loftZones);
+  input.value = '';
+  renderZoneItems();
+}
+async function removeZoneItem(itemId){
+  const zone = data.loftZones.find(z => z.id === activeZoneId);
+  if(!zone) return;
+  zone.items = zone.items.filter(it => it.id !== itemId);
+  await safeSet('loft-zones', data.loftZones);
+  renderZoneItems();
+}
+async function renameZone(){
+  const zone = data.loftZones.find(z => z.id === activeZoneId);
+  if(!zone) return;
+  const val = document.getElementById('zoneRenameInput').value.trim();
+  if(!val) return;
+  zone.label = val;
+  document.getElementById('zoneDetailTitle').textContent = val;
+  await safeSet('loft-zones', data.loftZones);
+  renderLoft();
+}
+async function deleteZone(){
+  data.loftZones = data.loftZones.filter(z => z.id !== activeZoneId);
+  await safeSet('loft-zones', data.loftZones);
+  closeSheet();
+  renderLoft();
+}
+function renderLoft(){
+  const wrap = document.getElementById('loftWrap');
+  const modeBtn = document.getElementById('loftModeBtn');
+  if(!data.loftImage){
+    modeBtn.style.display = 'none';
+    wrap.innerHTML = `
+      <div class="loft-empty">
+        <p>Upload en tegning eller et billede af loftet — så kan I sætte områder ud på det.</p>
+        <label class="act small" style="display:inline-block;cursor:pointer;">
+          Vælg billede
+          <input type="file" accept="image/*" style="display:none;" onchange="handleLoftImageUpload(event)" />
+        </label>
+      </div>`;
+    return;
+  }
+  modeBtn.style.display = 'flex';
+  modeBtn.textContent = loftZoneMode ? '✕' : '+';
+  modeBtn.setAttribute('aria-label', loftZoneMode ? 'Annullér' : 'Tilføj område');
+  const pins = data.loftZones.map(z => `
+    <button class="loft-pin" style="left:${z.x}%;top:${z.y}%;" onclick="event.stopPropagation();openZoneDetail('${z.id}')" title="${esc(z.label)}">${(data.loftZones.indexOf(z)+1)}</button>
+  `).join('');
+  wrap.innerHTML = `
+    ${loftZoneMode ? '<p class="loft-hint">Tryk et sted på billedet for at oprette et nyt område.</p>' : ''}
+    <div class="loft-img-wrap ${loftZoneMode ? 'add-mode' : ''}" onclick="handleLoftImageClick(event)">
+      <img src="${data.loftImage}" alt="Loftsplan" draggable="false" />
+      ${pins}
+    </div>
+    ${data.loftZones.length ? `<p class="loft-hint">${data.loftZones.map((z,i) => (i+1)+'. '+esc(z.label)).join(' · ')}</p>` : '<p class="loft-hint">Ingen områder endnu — tryk “+” og klik på billedet.</p>'}
+    <button class="link no-kiosk" onclick="removeLoftImage()">Fjern billede og nulstil</button>
+  `;
+}
+
+/* ---------- Freezer ---------- */
+let activeFreezerDrawer = null;
+function getDrawer(n){
+  if(!data.freezer[n]) data.freezer[n] = { label: '', items: [] };
+  return data.freezer[n];
+}
+function openFreezerDrawer(n){
+  activeFreezerDrawer = n;
+  const drawer = getDrawer(n);
+  document.getElementById('freezerSheetTitle').textContent = 'Skuffe ' + n;
+  document.getElementById('freezerLabelInput').value = drawer.label || '';
+  document.getElementById('freezerItemInput').value = '';
+  renderFreezerItems();
+  openSheet('freezerDrawerSheet');
+}
+function renderFreezerItems(){
+  const drawer = getDrawer(activeFreezerDrawer);
+  const wrap = document.getElementById('freezerItemsList');
+  if(!drawer.items.length){
+    wrap.innerHTML = '<div class="empty-mini">Tom skuffe.</div>';
+    return;
+  }
+  wrap.innerHTML = drawer.items.map(it => `
+    <div class="zone-item-row">
+      <span>${esc(it.name)}</span>
+      <button class="link no-kiosk" onclick="removeFreezerItem('${it.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+async function addFreezerItem(){
+  const input = document.getElementById('freezerItemInput');
+  const name = input.value.trim();
+  if(!name) return;
+  getDrawer(activeFreezerDrawer).items.push({ id: uid(), name });
+  await safeSet('freezer-drawers', data.freezer);
+  input.value = '';
+  renderFreezerItems();
+}
+async function removeFreezerItem(itemId){
+  const drawer = getDrawer(activeFreezerDrawer);
+  drawer.items = drawer.items.filter(it => it.id !== itemId);
+  await safeSet('freezer-drawers', data.freezer);
+  renderFreezerItems();
+}
+async function renameFreezerDrawer(){
+  const drawer = getDrawer(activeFreezerDrawer);
+  drawer.label = document.getElementById('freezerLabelInput').value.trim();
+  document.getElementById('freezerSheetTitle').textContent = 'Skuffe ' + activeFreezerDrawer + (drawer.label ? ' — ' + drawer.label : '');
+  await safeSet('freezer-drawers', data.freezer);
+  renderFreezer();
+}
+function renderFreezer(){
+  const wrap = document.getElementById('listFreezer');
+  let html = '';
+  for(let n = 1; n <= 7; n++){
+    const drawer = data.freezer[n] || { label:'', items:[] };
+    html += `
+    <div class="freezer-row" onclick="openFreezerDrawer(${n})">
+      <span class="num">${n}</span>
+      <span class="info">
+        <span class="lbl">Skuffe ${n}${drawer.label ? ' — ' + esc(drawer.label) : ''}</span><br>
+        <span class="cnt">${drawer.items.length} ${drawer.items.length === 1 ? 'vare' : 'varer'}</span>
+      </span>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+/* ---------- Packing list ---------- */
+async function addPackItem(){
+  const el = document.getElementById('packItem');
+  const name = el.value.trim();
+  if(!name) return;
+  data.packing.push({ id: uid(), name, addedBy: currentUser, addedAt: Date.now(), checked: false });
+  await safeSet('packing-list', data.packing);
+  el.value = '';
+  el.focus();
+  renderPacking();
+}
+async function togglePackItem(id){
+  const item = data.packing.find(x => x.id === id);
+  item.checked = !item.checked;
+  await safeSet('packing-list', data.packing);
+  renderPacking();
+}
+async function removePackItem(id){
+  data.packing = data.packing.filter(x => x.id !== id);
+  await safeSet('packing-list', data.packing);
+  renderPacking();
+}
+function renderPacking(){
+  const wrap = document.getElementById('listPacking');
+  if(!data.packing.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen ting på pakkelisten endnu.</div>';
+    return;
+  }
+  const sorted = [...data.packing].sort((a,b) => (a.checked === b.checked) ? 0 : (a.checked ? 1 : -1));
+  wrap.innerHTML = sorted.map(item => `
+    <div class="shop-row ${item.checked ? 'checked' : ''}">
+      <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackItem('${item.id}')" />
+      <span class="item">${esc(item.name)}</span>
+      <button class="link no-kiosk" onclick="removePackItem('${item.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+
+/* ---------- Budget ---------- */
+let editingBudgetId = null;
+function openAddBudget(){
+  editingBudgetId = null;
+  document.getElementById('budgetTitle').value = '';
+  document.getElementById('budgetAmount').value = '';
+  document.getElementById('budgetType').value = 'udgift';
+  document.getElementById('budgetSheetTitle').textContent = 'Tilføj udgift';
+  document.getElementById('budgetSaveBtn').textContent = 'Tilføj';
+  openSheet('addBoxBudget');
+}
+function editBudget(id){
+  const item = data.budget.find(x => x.id === id);
+  if(!item) return;
+  editingBudgetId = id;
+  document.getElementById('budgetTitle').value = item.title || '';
+  document.getElementById('budgetAmount').value = item.amount || '';
+  document.getElementById('budgetType').value = item.type || 'udgift';
+  document.getElementById('budgetSheetTitle').textContent = 'Rediger';
+  document.getElementById('budgetSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxBudget');
+}
+async function addBudget(){
+  const title = document.getElementById('budgetTitle').value.trim();
+  const amount = parseFloat(document.getElementById('budgetAmount').value);
+  if(!title || isNaN(amount)) return;
+  const type = document.getElementById('budgetType').value;
+  if(editingBudgetId){
+    const item = data.budget.find(x => x.id === editingBudgetId);
+    if(item){ item.title = title; item.amount = amount; item.type = type; }
+    editingBudgetId = null;
+  }else{
+    data.budget.push({ id: uid(), title, amount, type, addedBy: currentUser, addedAt: Date.now() });
+  }
+  await safeSet('budget-list', data.budget);
+  renderBudget();
+  closeSheet();
+}
+async function removeBudget(id){
+  data.budget = data.budget.filter(x => x.id !== id);
+  await safeSet('budget-list', data.budget);
+  renderBudget();
+}
+function renderBudget(){
+  const wrap = document.getElementById('listBudget');
+  const totalBudget = data.budget.filter(x => x.type === 'budget').reduce((s,x) => s + x.amount, 0);
+  const spent = data.budget.filter(x => x.type === 'udgift').reduce((s,x) => s + x.amount, 0);
+  const totalEl = document.getElementById('budgetTotal');
+  if(!data.budget.length){
+    totalEl.innerHTML = '';
+  }else if(totalBudget > 0){
+    const left = totalBudget - spent;
+    totalEl.innerHTML = `<b>${spent.toLocaleString('da-DK')} kr.</b> brugt af ${totalBudget.toLocaleString('da-DK')} kr. — ${left.toLocaleString('da-DK')} kr. tilbage`;
+  }else{
+    totalEl.innerHTML = `<b>${spent.toLocaleString('da-DK')} kr.</b> brugt i alt`;
+  }
+  if(!data.budget.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen budgetposter endnu.</div>';
+    return;
+  }
+  wrap.innerHTML = data.budget.map(item => `
+    <div class="shop-row">
+      <span class="item">${item.type === 'budget' ? '🎯 ' : ''}${esc(item.title)} <span class="meta">— ${item.amount.toLocaleString('da-DK')} kr.${item.type==='budget' ? ' (budget)' : ''}</span></span>
+      <button class="link no-kiosk" onclick="editBudget('${item.id}')">rediger</button>
+      <button class="link no-kiosk" onclick="removeBudget('${item.id}')">fjern</button>
+    </div>
+  `).join('');
+}
+
+/* ---------- Itinerary ---------- */
+let editingItinId = null;
+const ITIN_TYPE_LABEL = { fly:'✈ Fly', hotel:'🏨 Hotel', aktivitet:'📍 Aktivitet', andet:'Andet' };
+function openAddItinerary(){
+  editingItinId = null;
+  ['itinTitle','itinDate','itinTime','itinAddress','itinNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('itinType').value = 'fly';
+  document.getElementById('itinSheetTitle').textContent = 'Tilføj til tidslinje';
+  document.getElementById('itinSaveBtn').textContent = 'Tilføj';
+  openSheet('addBoxItin');
+}
+function editItinerary(id){
+  const item = data.itinerary.find(x => x.id === id);
+  if(!item) return;
+  editingItinId = id;
+  document.getElementById('itinTitle').value = item.title || '';
+  document.getElementById('itinDate').value = item.date || '';
+  document.getElementById('itinTime').value = item.time || '';
+  document.getElementById('itinType').value = item.type || 'andet';
+  document.getElementById('itinAddress').value = item.address || '';
+  document.getElementById('itinNote').value = item.note || '';
+  document.getElementById('itinSheetTitle').textContent = 'Rediger';
+  document.getElementById('itinSaveBtn').textContent = 'Gem ændringer';
+  openSheet('addBoxItin');
+}
+async function addItinerary(){
+  const title = document.getElementById('itinTitle').value.trim();
+  if(!title) return;
+  const date = document.getElementById('itinDate').value;
+  const time = document.getElementById('itinTime').value;
+  const type = document.getElementById('itinType').value;
+  const address = document.getElementById('itinAddress').value.trim();
+  const note = document.getElementById('itinNote').value.trim();
+  if(editingItinId){
+    const item = data.itinerary.find(x => x.id === editingItinId);
+    if(item){ Object.assign(item, { title, date, time, type, address, note }); }
+    editingItinId = null;
+  }else{
+    data.itinerary.push({ id: uid(), title, date, time, type, address, note, addedBy: currentUser, addedAt: Date.now() });
+  }
+  await safeSet('itinerary-list', data.itinerary);
+  renderItinerary();
+  closeSheet();
+}
+async function removeItinerary(id){
+  data.itinerary = data.itinerary.filter(x => x.id !== id);
+  await safeSet('itinerary-list', data.itinerary);
+  renderItinerary();
+}
+function renderItinerary(){
+  const wrap = document.getElementById('listItinerary');
+  if(!data.itinerary.length){
+    wrap.innerHTML = '<div class="empty-mini">Ingen bookinger på tidslinjen endnu.</div>';
+    return;
+  }
+  const sorted = [...data.itinerary].sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.time||'').localeCompare(b.time||''));
+  wrap.innerHTML = sorted.map(item => `
+    <div class="card">
+      <p class="title">${ITIN_TYPE_LABEL[item.type]||''} ${esc(item.title)}</p>
+      <p class="meta">${item.date ? new Date(item.date+'T00:00').toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short'}) : 'ingen dato'}${item.time ? ' · ' + item.time : ''}${item.address ? ' · ' + esc(item.address) : ''}</p>
+      ${item.note ? `<p class="note">${esc(item.note)}</p>` : ''}
+      <div class="row no-kiosk">
+        <button class="act small" onclick="editItinerary('${item.id}')">Rediger</button>
+        <button class="link" onclick="removeItinerary('${item.id}')">fjern</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ---------- Meal plan ---------- */
+const MEAL_DAYS = [['mon','Mandag'],['tue','Tirsdag'],['wed','Onsdag'],['thu','Torsdag'],['fri','Fredag'],['sat','Lørdag'],['sun','Søndag']];
+let editingMealDay = null;
+function openEditMeal(day){
+  editingMealDay = day;
+  const meal = data.mealPlan[day] || {};
+  document.getElementById('mealSheetTitle').textContent = MEAL_DAYS.find(d => d[0]===day)[1];
+  document.getElementById('mealDish').value = meal.dish || '';
+  document.getElementById('mealIngredients').value = (meal.ingredients || []).join('\n');
+  openSheet('addBoxMeal');
+}
+async function saveMeal(){
+  if(!editingMealDay) return;
+  const dish = document.getElementById('mealDish').value.trim();
+  const ingredients = document.getElementById('mealIngredients').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if(dish){
+    data.mealPlan[editingMealDay] = { dish, ingredients };
+  }else{
+    delete data.mealPlan[editingMealDay];
+  }
+  await safeSet('meal-plan', data.mealPlan);
+  renderMealPlan();
+  closeSheet();
+}
+async function sendMealToShopping(day){
+  const meal = data.mealPlan[day];
+  if(!meal || !meal.ingredients || !meal.ingredients.length) return;
+  for(const ing of meal.ingredients){
+    data.shopping.push({ id: uid(), name: ing, addedBy: currentUser, addedAt: Date.now(), checked: false });
+  }
+  await safeSet('shopping-list', data.shopping);
+  renderShopping();
+  showToast(meal.ingredients.length + ' ingredienser sendt til indkøbslisten');
+}
+async function moveMeal(day, dir){
+  const idx = MEAL_DAYS.findIndex(d => d[0] === day);
+  const otherIdx = idx + dir;
+  if(otherIdx < 0 || otherIdx >= MEAL_DAYS.length) return;
+  const otherDay = MEAL_DAYS[otherIdx][0];
+  const a = data.mealPlan[day];
+  const b = data.mealPlan[otherDay];
+  if(b) data.mealPlan[day] = b; else delete data.mealPlan[day];
+  if(a) data.mealPlan[otherDay] = a; else delete data.mealPlan[otherDay];
+  await safeSet('meal-plan', data.mealPlan);
+  renderMealPlan();
+}
+function renderMealPlan(){
+  const wrap = document.getElementById('listMealPlan');
+  wrap.innerHTML = MEAL_DAYS.map(([key, label], idx) => {
+    const meal = data.mealPlan[key];
+    return `
+    <div class="shop-row" style="align-items:flex-start;">
+      <div class="move-row no-kiosk">
+        <button onclick="moveMeal('${key}',-1)" ${idx === 0 ? 'disabled style="opacity:.3;"' : ''} aria-label="Flyt tidligere">←</button>
+        <button onclick="moveMeal('${key}',1)" ${idx === MEAL_DAYS.length-1 ? 'disabled style="opacity:.3;"' : ''} aria-label="Flyt senere">→</button>
+      </div>
+      <span class="item"><b>${label}:</b> ${meal ? esc(meal.dish) : '<span class="meta">ikke valgt</span>'}</span>
+      ${meal && meal.ingredients.length ? `<button class="link no-kiosk" onclick="sendMealToShopping('${key}')">til indkøb</button>` : ''}
+      <button class="link no-kiosk" onclick="openEditMeal('${key}')">${meal ? 'rediger' : 'vælg'}</button>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+init();
+</script>
