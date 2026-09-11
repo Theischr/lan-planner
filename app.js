@@ -40,6 +40,7 @@ function emptyData() {
     musicQueue: [],
     badgesResetAt: 0,
     gameFeedback: [],
+    kegs: [],
   };
 }
 
@@ -97,6 +98,7 @@ function normalizeData(raw) {
   if (!next.badgesResetAt) next.badgesResetAt = 0;
   if (!next.gameFeedback) next.gameFeedback = [];
   next.gameFeedback = next.gameFeedback.map((f) => ({ ...f, status: f.status || 'idea', votes: f.votes || {} }));
+  if (!next.kegs) next.kegs = [];
   return next;
 }
 
@@ -219,6 +221,7 @@ function render() {
   renderCountdown();
   renderDates();
   renderDrinks();
+  renderKegs();
   renderDrinkMenu();
   renderGames();
   renderMeals();
@@ -684,6 +687,170 @@ async function orderDrinkFromMenu(menuItem) {
   const entry = { id: uid(), item: menuItem.name, person: myName, timestamp: Date.now(), done: false };
   markDrinkSeen(entry.id);
   await saveData({ ...data, drinks: [...data.drinks, entry] });
+}
+
+/* ---------- Keg tracker (weighted wheel biased toward whatever has more left) ---------- */
+
+function renderKegs() {
+  const box = $('keg-list');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (data.kegs.length === 0) {
+    box.innerHTML = '<div class="empty">Ingen fustager tilføjet endnu — tilføj jeres nedenfor.</div>';
+    return;
+  }
+
+  const sorted = [...data.kegs].sort((a, b) => (a.remainingLiters / a.totalLiters) - (b.remainingLiters / b.totalLiters));
+  const lowestId = sorted[0] ? sorted[0].id : null;
+
+  data.kegs.forEach((keg) => {
+    const pct = keg.totalLiters > 0 ? Math.max(0, Math.min(100, (keg.remainingLiters / keg.totalLiters) * 100)) : 0;
+    const isAhead = keg.id === lowestId && data.kegs.length > 1 && keg.remainingLiters > 0;
+    const isEmpty = keg.remainingLiters <= 0;
+
+    const card = document.createElement('div');
+    card.className = 'keg-card';
+
+    const header = document.createElement('div');
+    header.className = 'keg-header';
+    header.innerHTML = `<span class="keg-name">${escapeHtml(keg.emoji || '🛢️')} ${escapeHtml(keg.name)}</span><span class="keg-amount">${keg.remainingLiters.toFixed(1)} / ${keg.totalLiters} L</span>`;
+    card.appendChild(header);
+
+    const track = document.createElement('div');
+    track.className = 'keg-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'keg-bar-fill';
+    fill.style.width = `${pct}%`;
+    if (isEmpty) fill.classList.add('empty');
+    track.appendChild(fill);
+    card.appendChild(track);
+
+    const tag = document.createElement('div');
+    tag.className = 'keg-status-tag';
+    if (isEmpty) {
+      tag.textContent = '🏁 Tør!';
+      tag.classList.add('keg-status-empty');
+    } else if (isAhead) {
+      tag.textContent = '🏆 Foran i kapløbet — skal drikkes mere';
+      tag.classList.add('keg-status-ahead');
+    } else {
+      tag.textContent = '🐌 Sakker bagud';
+    }
+    card.appendChild(tag);
+
+    const actions = document.createElement('div');
+    actions.className = 'keg-actions';
+
+    const pourBtn = document.createElement('button');
+    pourBtn.className = 'done-btn';
+    pourBtn.textContent = `🍻 Skænk en (${keg.pourSizeCl} cl)`;
+    pourBtn.disabled = isEmpty;
+    pourBtn.onclick = () => pourFromKeg(keg.id);
+    actions.appendChild(pourBtn);
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'link-btn';
+    resetBtn.textContent = 'Fyld op';
+    resetBtn.onclick = () => refillKeg(keg.id);
+    actions.appendChild(resetBtn);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'drink-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = () => removeKeg(keg.id);
+    actions.appendChild(removeBtn);
+
+    card.appendChild(actions);
+    box.appendChild(card);
+  });
+}
+
+async function addKeg() {
+  const nameInput = $('keg-name-input');
+  const litersInput = $('keg-liters-input');
+  const pourInput = $('keg-pour-input');
+  const name = nameInput.value.trim();
+  const liters = parseFloat(litersInput.value);
+  const pourCl = parseInt(pourInput.value, 10) || 40;
+  if (!name || !liters || liters <= 0) {
+    showError('Angiv navn og antal liter for fustagen.');
+    return;
+  }
+  const emoji = /øl|beer|fadøl/i.test(name) ? '🍺' : '🍹';
+  const entry = { id: uid(), name, emoji, totalLiters: liters, remainingLiters: liters, pourSizeCl: pourCl };
+  await saveData({ ...data, kegs: [...data.kegs, entry] });
+  nameInput.value = '';
+  litersInput.value = '';
+  pourInput.value = '40';
+}
+
+async function pourFromKeg(id) {
+  const next = {
+    ...data,
+    kegs: data.kegs.map((k) => (k.id === id ? { ...k, remainingLiters: Math.max(0, k.remainingLiters - k.pourSizeCl / 100) } : k)),
+  };
+  await saveData(next);
+}
+
+async function refillKeg(id) {
+  const next = {
+    ...data,
+    kegs: data.kegs.map((k) => (k.id === id ? { ...k, remainingLiters: k.totalLiters } : k)),
+  };
+  await saveData(next);
+}
+
+async function removeKeg(id) {
+  await saveData({ ...data, kegs: data.kegs.filter((k) => k.id !== id) });
+}
+
+let kegWheelSpinning = false;
+
+function spinKegWheel() {
+  if (kegWheelSpinning) return;
+  const eligible = data.kegs.filter((k) => k.remainingLiters > 0);
+  if (eligible.length === 0) {
+    showError('Ingen fustager med væske tilbage — tilføj en, eller fyld en op.');
+    return;
+  }
+  kegWheelSpinning = true;
+  const resultBox = $('keg-wheel-result');
+  resultBox.classList.add('hidden');
+
+  // Weighted random pick: more remaining volume = proportionally higher chance.
+  const totalWeight = eligible.reduce((sum, k) => sum + k.remainingLiters, 0);
+  let r = Math.random() * totalWeight;
+  let winner = eligible[0];
+  for (const k of eligible) {
+    if (r < k.remainingLiters) { winner = k; break; }
+    r -= k.remainingLiters;
+  }
+
+  const cards = Array.from(document.querySelectorAll('#keg-list .keg-card'));
+  const winnerCardIndex = Math.max(0, data.kegs.findIndex((k) => k.id === winner.id));
+
+  let step = 0;
+  const totalSteps = 16 + winnerCardIndex;
+  let delay = 80;
+
+  function tick() {
+    cards.forEach((c) => c.classList.remove('wheel-highlight'));
+    if (cards.length) cards[step % cards.length].classList.add('wheel-highlight');
+    step++;
+    delay += 12;
+
+    if (step < totalSteps) {
+      setTimeout(tick, delay);
+    } else {
+      kegWheelSpinning = false;
+      resultBox.textContent = `🎉 Drik: ${winner.emoji} ${winner.name}!`;
+      resultBox.classList.remove('hidden');
+      pourFromKeg(winner.id);
+      setTimeout(() => cards.forEach((c) => c.classList.remove('wheel-highlight')), 1500);
+    }
+  }
+  tick();
 }
 
 let wheelSpinning = false;
@@ -2109,6 +2276,9 @@ async function init() {
   });
 
   $('menu-drink-add-btn').onclick = addDrinkMenuItem;
+  $('keg-add-btn').onclick = addKeg;
+  $('spin-keg-wheel-btn').onclick = spinKegWheel;
+
   $('spin-wheel-btn').onclick = spinWheel;
   $('spin-game-wheel-btn').onclick = spinGameWheel;
 

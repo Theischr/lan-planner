@@ -288,6 +288,14 @@ const GAME_LAUNCH_PROTOCOL = 'lanparty-game://start';
 
 En delt liste hvor alle kan tilføje idéer/feedback til selve spillet, stemme på dem (★), og cykle status ved at klikke: 💡 Idé → 🔧 Under udvikling → ✅ Færdig → tilbage til 💡 Idé. Sorteres automatisk efter status og stemmer, så de mest efterspurgte uafklarede idéer ligger øverst. Ingen ny opsætning nødvendig — bruger jeres eksisterende delte data, ligesom resten af appen.
 
+## v15: Fustage-kapløb (vægtet hjul mod spild)
+
+Ny sektion øverst i **Drinks**-fanen. Tilføj jeres fustager (navn, antal liter, cl pr. skænk), og hjulet **🎡 Hvad skal jeg drikke?** vælger vægtet efter hvor meget der reelt er tilbage — jo mere fyldt en fustage er, jo oftere bliver den valgt. Med 20L øl mod fx 5L drink vinder øllen ~80% af tiden, helt automatisk, og vægtningen justerer sig selv løbende i takt med at I drikker.
+
+Hver fustage vises med en fyldbar, "🏆 Foran i kapløbet"-mærkat på den der (proportionalt) er mindst drukket, og en "🍻 Skænk en"-knap der trækker fra det angivne skænke-mål hver gang. "Fyld op" nulstiller til fuld, hvis I skifter fustage undervejs.
+
+Ingen ny opsætning — bruger jeres eksisterende delte data.
+
 ## Gør repoet offentligt: fjerne tidligere versioner/historik
 
 At rette en fil løser kun hvordan den ser ud **nu** — gamle commits med tidligere indhold (inkl. en evt. rigtig adgangskode, hvis den nogensinde blev skrevet direkte i en fil) ligger stadig tilgængelige i historikken, så længe repoet er offentligt.
