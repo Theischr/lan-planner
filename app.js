@@ -786,11 +786,17 @@ async function addKeg() {
 }
 
 async function pourFromKeg(id) {
-  const next = {
-    ...data,
-    kegs: data.kegs.map((k) => (k.id === id ? { ...k, remainingLiters: Math.max(0, k.remainingLiters - k.pourSizeCl / 100) } : k)),
-  };
-  await saveData(next);
+  const keg = data.kegs.find((k) => k.id === id);
+  const nextKegs = data.kegs.map((k) => (k.id === id ? { ...k, remainingLiters: Math.max(0, k.remainingLiters - k.pourSizeCl / 100) } : k));
+
+  let nextDrinks = data.drinks;
+  if (keg && myName) {
+    const entry = { id: uid(), item: `${keg.emoji} ${keg.name}`, person: myName, timestamp: Date.now(), done: true };
+    markDrinkSeen(entry.id);
+    nextDrinks = [...data.drinks, entry];
+  }
+
+  await saveData({ ...data, kegs: nextKegs, drinks: nextDrinks });
 }
 
 async function refillKeg(id) {
