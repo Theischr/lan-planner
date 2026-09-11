@@ -807,36 +807,58 @@ async function removeKeg(id) {
 
 let kegWheelSpinning = false;
 
+// Hver drink på menuen får denne vægt i det kombinerede hjul (i liter-ækvivalenter).
+// Justér op/ned hvis I vil have menu-drinks til at fylde mere eller mindre relativt til fustagerne.
+const MENU_ITEM_WHEEL_WEIGHT = 0.5;
+
 function spinKegWheel() {
   if (kegWheelSpinning) return;
-  const eligible = data.kegs.filter((k) => k.remainingLiters > 0);
-  if (eligible.length === 0) {
-    showError('Ingen fustager med væske tilbage — tilføj en, eller fyld en op.');
+
+  const kegEntries = data.kegs
+    .filter((k) => k.remainingLiters > 0)
+    .map((k) => ({ type: 'keg', id: k.id, label: `${k.emoji} ${k.name}`, weight: k.remainingLiters, ref: k }));
+  const menuEntries = data.drinkMenu.map((d) => ({ type: 'menu', id: d.id, label: d.name, weight: MENU_ITEM_WHEEL_WEIGHT, ref: d }));
+  const pool = [...kegEntries, ...menuEntries];
+
+  if (pool.length === 0) {
+    showError('Tilføj mindst én fustage eller én drink til menuen først.');
     return;
   }
+
   kegWheelSpinning = true;
   const resultBox = $('keg-wheel-result');
   resultBox.classList.add('hidden');
 
-  // Weighted random pick: more remaining volume = proportionally higher chance.
-  const totalWeight = eligible.reduce((sum, k) => sum + k.remainingLiters, 0);
+  // Weighted random pick: fustager efter liter tilbage, menu-drinks efter fast vægt.
+  const totalWeight = pool.reduce((sum, e) => sum + e.weight, 0);
   let r = Math.random() * totalWeight;
-  let winner = eligible[0];
-  for (const k of eligible) {
-    if (r < k.remainingLiters) { winner = k; break; }
-    r -= k.remainingLiters;
+  let winner = pool[0];
+  for (const e of pool) {
+    if (r < e.weight) { winner = e; break; }
+    r -= e.weight;
   }
 
-  const cards = Array.from(document.querySelectorAll('#keg-list .keg-card'));
-  const winnerCardIndex = Math.max(0, data.kegs.findIndex((k) => k.id === winner.id));
+  const kegCards = Array.from(document.querySelectorAll('#keg-list .keg-card'));
+  const menuCards = Array.from(document.querySelectorAll('#drink-menu-list .drink-menu-card'));
+  const allCards = [...kegCards, ...menuCards];
+
+  let winnerCardEl = null;
+  if (winner.type === 'keg') {
+    const kegIdx = data.kegs.filter((k) => k.remainingLiters > 0).findIndex((k) => k.id === winner.id);
+    winnerCardEl = kegCards[kegIdx];
+  } else {
+    const menuIdx = data.drinkMenu.findIndex((d) => d.id === winner.id);
+    winnerCardEl = menuCards[menuIdx];
+  }
+  const winnerIndex = Math.max(0, allCards.indexOf(winnerCardEl));
 
   let step = 0;
-  const totalSteps = 16 + winnerCardIndex;
+  const totalSteps = 16 + winnerIndex;
   let delay = 80;
 
   function tick() {
-    cards.forEach((c) => c.classList.remove('wheel-highlight'));
-    if (cards.length) cards[step % cards.length].classList.add('wheel-highlight');
+    allCards.forEach((c) => c.classList.remove('wheel-highlight'));
+    if (allCards.length) allCards[step % allCards.length].classList.add('wheel-highlight');
     step++;
     delay += 12;
 
@@ -844,10 +866,14 @@ function spinKegWheel() {
       setTimeout(tick, delay);
     } else {
       kegWheelSpinning = false;
-      resultBox.textContent = `🎉 Drik: ${winner.emoji} ${winner.name}!`;
+      resultBox.textContent = `🎉 Drik: ${winner.label}!`;
       resultBox.classList.remove('hidden');
-      pourFromKeg(winner.id);
-      setTimeout(() => cards.forEach((c) => c.classList.remove('wheel-highlight')), 1500);
+      if (winner.type === 'keg') {
+        pourFromKeg(winner.id);
+      } else {
+        orderDrinkFromMenu(winner.ref);
+      }
+      setTimeout(() => allCards.forEach((c) => c.classList.remove('wheel-highlight')), 1500);
     }
   }
   tick();
