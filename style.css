@@ -963,3 +963,6 @@ img { max-width: 100%; }
   .timer-display { font-size: 30px; }
   .aim-arena { height: 260px; }
 }
+
+.checklist-remove { margin-left: auto; padding: 6px 10px; font-size: 14px; }
+.checklist-remove:hover { color: var(--danger, #e55); }

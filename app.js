@@ -34,6 +34,7 @@ function emptyData() {
     speedResults: [],
     shoppingExtra: [],
     shoppingChecked: {},
+    shoppingHidden: {},
     aimScores: [],
     avatars: {},
     tournament: null,
@@ -91,6 +92,7 @@ function normalizeData(raw) {
   if (!next.speedResults) next.speedResults = [];
   if (!next.shoppingExtra) next.shoppingExtra = [];
   if (!next.shoppingChecked) next.shoppingChecked = {};
+  if (!next.shoppingHidden) next.shoppingHidden = {};
   if (!next.aimScores) next.aimScores = [];
   if (!next.avatars) next.avatars = {};
   if (next.tournament === undefined) next.tournament = null;
@@ -1311,8 +1313,11 @@ function buildShoppingSections() {
   });
   if (drinkItems.length) sections.push({ title: 'Drinks', items: drinkItems });
   const extraItems = data.shoppingExtra.map((e) => ({ key: `extra:${e.id}`, name: e.name, imageUrl: '' }));
-  if (extraItems.length) sections.push({ title: 'Andre indkøb', items: extraItems, removable: true });
-  return sections;
+  if (extraItems.length) sections.push({ title: 'Andre indkøb', items: extraItems });
+  const hidden = data.shoppingHidden || {};
+  return sections
+    .map((s) => ({ ...s, items: s.items.filter((i) => !hidden[i.key]) }))
+    .filter((s) => s.items.length);
 }
 
 function renderShoppingList() {
@@ -1320,9 +1325,16 @@ function renderShoppingList() {
   if (!box) return;
   box.innerHTML = '';
 
+  const hiddenCount = Object.keys(data.shoppingHidden || {}).length;
+  const restoreBtn = $('shopping-restore-btn');
+  if (restoreBtn) {
+    restoreBtn.classList.toggle('hidden', hiddenCount === 0);
+    restoreBtn.textContent = `Gendan skjulte (${hiddenCount})`;
+  }
+
   const sections = buildShoppingSections();
   if (sections.length === 0) {
-    box.innerHTML = '<div class="empty">Tilføj noget under Mad eller Drinks, så dukker det op her.</div>';
+    box.innerHTML = '<div class="empty">Listen er tom. Tilføj noget under Mad eller Drinks, eller gendan skjulte punkter.</div>';
     return;
   }
 
@@ -1366,13 +1378,15 @@ function renderShoppingList() {
       label.textContent = item.name;
       row.appendChild(label);
 
-      if (section.removable) {
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'checklist-remove';
-        removeBtn.textContent = '✕';
-        removeBtn.onclick = () => removeShoppingExtra(item.key.replace('extra:', ''));
-        row.appendChild(removeBtn);
-      }
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'checklist-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Fjern fra indkøbslisten';
+      removeBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        removeShoppingItem(item.key);
+      };
+      row.appendChild(removeBtn);
 
       list.appendChild(row);
     });
@@ -1398,6 +1412,21 @@ async function addShoppingExtra() {
   const entry = { id: uid(), name, addedBy: myName };
   await saveData({ ...data, shoppingExtra: [...data.shoppingExtra, entry] });
   input.value = '';
+}
+
+async function removeShoppingItem(key) {
+  if (key.startsWith('extra:')) return removeShoppingExtra(key.slice(6));
+  const nextChecked = { ...data.shoppingChecked };
+  delete nextChecked[key];
+  await saveData({
+    ...data,
+    shoppingHidden: { ...(data.shoppingHidden || {}), [key]: true },
+    shoppingChecked: nextChecked,
+  });
+}
+
+async function restoreShoppingHidden() {
+  await saveData({ ...data, shoppingHidden: {} });
 }
 
 async function removeShoppingExtra(id) {
@@ -2320,6 +2349,7 @@ async function init() {
   $('badges-reset-btn').onclick = resetBadges;
 
   $('shopping-uncheck-all-btn').onclick = uncheckAllShopping;
+  if ($('shopping-restore-btn')) $('shopping-restore-btn').onclick = restoreShoppingHidden;
   $('shopping-extra-add-btn').onclick = addShoppingExtra;
   $('shopping-extra-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addShoppingExtra();
