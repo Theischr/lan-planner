@@ -35,6 +35,7 @@ function emptyData() {
     shoppingExtra: [],
     shoppingChecked: {},
     shoppingHidden: {},
+    water: {},
     aimScores: [],
     avatars: {},
     tournament: null,
@@ -93,6 +94,7 @@ function normalizeData(raw) {
   if (!next.shoppingExtra) next.shoppingExtra = [];
   if (!next.shoppingChecked) next.shoppingChecked = {};
   if (!next.shoppingHidden) next.shoppingHidden = {};
+  if (!next.water) next.water = {};
   if (!next.aimScores) next.aimScores = [];
   if (!next.avatars) next.avatars = {};
   if (next.tournament === undefined) next.tournament = null;
@@ -221,6 +223,7 @@ function render() {
   $('who-am-i-name').textContent = myName;
   renderMyAvatarPreview();
   renderCountdown();
+  if (typeof renderWater === 'function') renderWater();
   renderDates();
   renderDrinks();
   renderKegs();

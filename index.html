@@ -80,6 +80,27 @@
           </div>
         </section>
 
+        <section id="water-bar" class="water-bar">
+          <div class="water-main">
+            <span id="water-status" class="water-status"></span>
+            <button id="water-drink-btn" class="primary-btn">Jeg drak vand</button>
+            <button id="water-settings-btn" class="icon-btn" title="Indstillinger for vandpåmindelse">⚙️</button>
+          </div>
+          <div id="water-score" class="muted small"></div>
+          <div id="water-settings" class="water-settings hidden">
+            <label><input type="checkbox" id="water-enabled" /> Påmind mig</label>
+            <label>hver
+              <select id="water-minutes" class="input-small">
+                <option value="20">20</option><option value="30">30</option><option value="45">45</option>
+                <option value="60">60</option><option value="90">90</option>
+              </select> min
+            </label>
+            <label><input type="checkbox" id="water-sound" /> Lyd</label>
+            <button id="water-notif-btn" class="link-btn">Slå notifikationer til</button>
+            <div class="muted small">Påmindelser virker mens siden er åben. Indstillingerne gælder kun din egen enhed.</div>
+          </div>
+        </section>
+
         <nav id="group-bar" class="group-bar">
           <button class="group-btn" data-group="planning">📋 Planlægning</button>
           <button class="group-btn active" data-group="party">🔥 Hammer</button>
@@ -501,5 +522,6 @@
   </script>
   <script src="spotify.js"></script>
   <script src="timer.js"></script>
+  <script src="water.js"></script>
 </body>
 </html>

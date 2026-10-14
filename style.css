@@ -966,3 +966,13 @@ img { max-width: 100%; }
 
 .checklist-remove { margin-left: auto; padding: 6px 10px; font-size: 14px; }
 .checklist-remove:hover { color: var(--danger, #e55); }
+
+/* Vandpåmindelse */
+.water-bar { background: var(--card, #1e2530); border: 1px solid rgba(80,170,255,.35); border-radius: 10px; padding: 8px 12px; margin: 0 0 12px; }
+.water-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.water-status { flex: 1 1 auto; font-weight: 600; }
+.water-bar.water-due { border-color: #4db2ff; box-shadow: 0 0 0 2px rgba(77,178,255,.35); animation: water-pulse 1.4s ease-in-out infinite; }
+.water-bar.water-off .water-status { font-weight: 400; opacity: .7; }
+.water-settings { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; }
+@keyframes water-pulse { 50% { box-shadow: 0 0 0 5px rgba(77,178,255,.15); } }
+@media (prefers-reduced-motion: reduce) { .water-bar.water-due { animation: none; } }
