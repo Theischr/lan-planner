@@ -124,7 +124,6 @@
               <h2 class="h2" style="margin:0;">🛢️ Fustage tracker</h2>
               <button id="spin-keg-wheel-btn" class="agree-btn">🎡 Hvad skal jeg drikke?</button>
             </div>
-            <p class="muted small">Hjulet trækker fra både fustagerne og hele drinkmenuen. Fustager vægtes efter hvor meget der er tilbage (så I ikke sidder med spild), mens hver drink på menuen tæller med en fast, mindre vægt — så I får variation, men fustagerne stadig skal tømmes.</p>
             <div id="keg-wheel-result" class="wheel-result hidden"></div>
             <div id="keg-list" class="keg-list"></div>
             <div class="inline-form" style="margin-top:12px;">
@@ -133,6 +132,15 @@
               <input id="keg-pour-input" class="input-small" type="number" min="1" step="1" placeholder="Cl pr. skænk" style="width:100px;" value="40" />
               <button id="keg-add-btn" class="primary-btn">+ Tilføj fustage</button>
             </div>
+          </section>
+
+          <section class="card">
+            <div class="section-header-row">
+              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
+              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
+            </div>
+            <div id="wheel-result" class="wheel-result hidden"></div>
+            <div id="drink-menu-list" class="game-grid"></div>
           </section>
 
           <section class="card">
@@ -145,15 +153,6 @@
             <div id="notif-hint" class="muted small hidden" style="margin-top:8px;">
               Tips: <button id="enable-notif-btn" class="link-btn">slå notifikationer til</button> for at få besked om nye bestillinger.
             </div>
-          </section>
-
-          <section class="card">
-            <div class="section-header-row">
-              <h2 class="h2" style="margin:0;">Drinkmenu</h2>
-              <button id="spin-wheel-btn" class="agree-btn">🎡 Snurr hjulet</button>
-            </div>
-            <div id="wheel-result" class="wheel-result hidden"></div>
-            <div id="drink-menu-list" class="game-grid"></div>
           </section>
 
           <section class="card">

@@ -734,10 +734,8 @@ function renderKegs() {
     } else if (isAhead) {
       tag.textContent = '🏆 Foran i kapløbet — skal drikkes mere';
       tag.classList.add('keg-status-ahead');
-    } else {
-      tag.textContent = '🐌 Sakker bagud';
     }
-    card.appendChild(tag);
+    if (tag.textContent) card.appendChild(tag);
 
     const actions = document.createElement('div');
     actions.className = 'keg-actions';
